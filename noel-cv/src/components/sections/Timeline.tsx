@@ -249,14 +249,26 @@ export function Timeline() {
     tourStatusRef.current = tourStatus;
   }, [tourStatus]);
 
+  const activeTopic: TimelineTopic | null = topicFilter === "all" ? null : topicFilter;
   const visibleItems = useMemo(() => {
-    if (topicFilter === "all") {
+    if (!activeTopic) {
       return sortedItems;
     }
-    return sortedItems.filter((item) => item.topic === topicFilter);
-  }, [sortedItems, topicFilter]);
+    return sortedItems.filter((item) => item.topic === activeTopic);
+  }, [sortedItems, activeTopic]);
 
-  const isSingleTrack = topicFilter !== "all";
+  const isSingleTrack = activeTopic !== null;
+  const topicLabelById = useMemo(
+    () =>
+      ({
+        education: "Education",
+        professional: "Professional",
+        project: "Projects",
+        course: "Courses",
+        sport: "Sport",
+      }) satisfies Record<TimelineTopic, string>,
+    [],
+  );
 
   const ensureItemIsVisible = (id: string) => {
     const node = itemContainerRefs.current.get(id);
@@ -520,34 +532,65 @@ export function Timeline() {
           <div className="timeline__events" aria-label="Timeline of experience">
             <div
               className="timeline__tracks"
-              aria-hidden="true"
+              role="group"
+              aria-label="Timeline tracks"
               style={{
                 gridTemplateColumns: isSingleTrack ? "minmax(0, 1fr)" : "repeat(5, minmax(0, 1fr))",
               }}
             >
               {isSingleTrack ? (
-                <div className={`timeline__track timeline__track--${topicFilter}`}>
+                <button
+                  type="button"
+                  className={`timeline__track timeline__track--${activeTopic} timeline__track--is-active`}
+                  onClick={() => applyTopicFilter(activeTopic!)}
+                  aria-pressed={true}
+                >
                   <span className="timeline__track-label">
-                    {topicFilters.find((filter) => filter.id === topicFilter)?.label ?? "Track"}
+                    {topicLabelById[activeTopic!]}
                   </span>
-                </div>
+                </button>
               ) : (
                 <>
-                  <div className="timeline__track timeline__track--education">
+                  <button
+                    type="button"
+                    className="timeline__track timeline__track--education"
+                    onClick={() => applyTopicFilter("education")}
+                    aria-pressed={false}
+                  >
                     <span className="timeline__track-label">Education</span>
-                  </div>
-                  <div className="timeline__track timeline__track--professional">
+                  </button>
+                  <button
+                    type="button"
+                    className="timeline__track timeline__track--professional"
+                    onClick={() => applyTopicFilter("professional")}
+                    aria-pressed={false}
+                  >
                     <span className="timeline__track-label">Professional</span>
-                  </div>
-                  <div className="timeline__track timeline__track--project">
+                  </button>
+                  <button
+                    type="button"
+                    className="timeline__track timeline__track--project"
+                    onClick={() => applyTopicFilter("project")}
+                    aria-pressed={false}
+                  >
                     <span className="timeline__track-label">Projects</span>
-                  </div>
-                  <div className="timeline__track timeline__track--course">
+                  </button>
+                  <button
+                    type="button"
+                    className="timeline__track timeline__track--course"
+                    onClick={() => applyTopicFilter("course")}
+                    aria-pressed={false}
+                  >
                     <span className="timeline__track-label">Courses</span>
-                  </div>
-                  <div className="timeline__track timeline__track--sport">
+                  </button>
+                  <button
+                    type="button"
+                    className="timeline__track timeline__track--sport"
+                    onClick={() => applyTopicFilter("sport")}
+                    aria-pressed={false}
+                  >
                     <span className="timeline__track-label">Sport</span>
-                  </div>
+                  </button>
                 </>
               )}
             </div>
@@ -927,7 +970,7 @@ export function Timeline() {
           inset: 0 var(--space-4) 0 var(--space-1);
           display: grid;
           grid-template-columns: repeat(5, minmax(0, 1fr));
-          pointer-events: none;
+          pointer-events: auto;
           z-index: 0;
         }
 
@@ -937,6 +980,12 @@ export function Timeline() {
 
         .timeline__track {
           position: relative;
+          appearance: none;
+          border: 0;
+          padding: 0;
+          background: transparent;
+          cursor: pointer;
+          color: inherit;
         }
 
         .timeline__track::before {
@@ -954,6 +1003,25 @@ export function Timeline() {
             rgba(148, 163, 184, 0.8),
             rgba(148, 163, 184, 0.1)
           );
+        }
+
+        .timeline__track:hover::before {
+          opacity: 0.75;
+        }
+
+        .timeline__track:hover .timeline__track-label {
+          color: rgba(248, 250, 252, 0.85);
+        }
+
+        .timeline__track:focus-visible {
+          outline: 2px solid rgba(94, 234, 212, 0.9);
+          outline-offset: 6px;
+          border-radius: 16px;
+        }
+
+        .timeline__track--is-active::before {
+          opacity: 0.95;
+          filter: drop-shadow(0 0 18px rgba(94, 234, 212, 0.12));
         }
 
         .timeline__track-label {
@@ -1019,6 +1087,16 @@ export function Timeline() {
           display: flex;
           flex-direction: column;
           gap: var(--space-8);
+          pointer-events: none;
+        }
+
+        .timeline__rows > div {
+          pointer-events: none;
+        }
+
+        .timeline__year-separator,
+        .timeline__rows [data-timeline-item] {
+          pointer-events: auto;
         }
 
         .timeline__year-separator {
