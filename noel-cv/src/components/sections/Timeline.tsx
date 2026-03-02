@@ -440,61 +440,64 @@ export function Timeline() {
         .timeline__row-track {
           grid-column: 1 / -1;
           position: relative;
-          height: 0;
+          display: grid;
+          grid-template-columns: repeat(5, minmax(0, 1fr));
+          align-items: center;
+          height: 40px;
         }
 
         .timeline__dot {
-          position: absolute;
-          top: 50%;
+          position: relative;
           width: 14px;
           height: 14px;
           border-radius: 999px;
           border: 2px solid var(--color-surface);
-          transform: translate(-50%, -50%);
+          justify-self: center;
+          z-index: 1;
         }
 
         .timeline__dot--secondary {
-          transform: translate(-50%, 30%);
+          transform: translateY(30%);
           opacity: 0.8;
         }
 
         .timeline__duration {
-          position: absolute;
-          top: 50%;
-          width: 10px;          
-          height: 40px;         
+          position: relative;
+          width: 10px;
+          height: 40px;
           transform-origin: center;
-          transform: translate(-50%, -50%);
           border-radius: 999px;
+          justify-self: center;
+          z-index: 0;
         }
 
         .timeline__dot--education {
-          left: 8.5%;
+          grid-column: 1;
           background: rgba(56, 189, 248, 1);
         }
 
         .timeline__dot--professional {
-          left: 28.3%;
+          grid-column: 2;
           background: rgba(74, 222, 128, 1);
         }
 
         .timeline__dot--project {
-          left: 48.5%;
+          grid-column: 3;
           background: rgba(244, 114, 182, 1);
         }
 
         .timeline__dot--course {
-          left: 68.5%;
+          grid-column: 4;
           background: rgba(129, 140, 248, 1);
         }
 
         .timeline__dot--sport {
-          left: 88.3%;
+          grid-column: 5;
           background: rgba(251, 191, 36, 1);
         }
 
         .timeline__duration--education {
-          left: 8.5%;
+          grid-column: 1;
           background: linear-gradient(
             to bottom,
             rgba(56, 189, 248, 0.2),
@@ -503,7 +506,7 @@ export function Timeline() {
         }
 
         .timeline__duration--professional {
-          left: 28.3%;
+          grid-column: 2;
           background: linear-gradient(
             to bottom,
             rgba(74, 222, 128, 0.2),
@@ -512,7 +515,7 @@ export function Timeline() {
         }
 
         .timeline__duration--project {
-          left: 48.5%;
+          grid-column: 3;
           background: linear-gradient(
             to bottom,
             rgba(244, 114, 182, 0.2),
@@ -521,7 +524,7 @@ export function Timeline() {
         }
 
         .timeline__duration--course {
-          left: 68.5%;
+          grid-column: 4;
           background: linear-gradient(
             to bottom,
             rgba(129, 140, 248, 0.2),
@@ -530,7 +533,7 @@ export function Timeline() {
         }
 
         .timeline__duration--sport {
-          left: 89%;
+          grid-column: 5;
           background: linear-gradient(
             to bottom,
             rgba(251, 191, 36, 0.2),
