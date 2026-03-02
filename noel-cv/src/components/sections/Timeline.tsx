@@ -16,10 +16,12 @@ interface TimelineRowProps {
 
 function TimelineRow({ item, isActive, isPinned, onAutoActivate, onClick }: TimelineRowProps) {
   const ref = useRef<HTMLDivElement | null>(null);
+  const trackRef = useRef<HTMLDivElement | null>(null);
   const isInView = useInView(ref, {
     margin: "-35% 0px -35% 0px",
   });
   const shouldReduceMotion = useReducedMotion();
+  const [rangeStyle, setRangeStyle] = useState<{ height: number; offset: number } | null>(null);
 
   useEffect(() => {
     if (isInView && !isPinned) {
@@ -28,6 +30,50 @@ function TimelineRow({ item, isActive, isPinned, onAutoActivate, onClick }: Time
   }, [isInView, isPinned, onAutoActivate]);
 
   const hasRange = item.yearEnd !== undefined && item.yearEnd !== item.yearStart;
+
+  useEffect(() => {
+    if (!hasRange || !isActive) {
+      setRangeStyle(null);
+      return;
+    }
+
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const trackEl = trackRef.current;
+    if (!trackEl) {
+      return;
+    }
+
+    const endYear = item.yearEnd ?? item.yearStart;
+    const endSeparator = document.querySelector<HTMLElement>(
+      `[data-timeline-year="${endYear}"]`,
+    );
+
+    if (!endSeparator) {
+      setRangeStyle(null);
+      return;
+    }
+
+    const trackRect = trackEl.getBoundingClientRect();
+    const endRect = endSeparator.getBoundingClientRect();
+
+    const startCenterY = trackRect.top + trackRect.height / 2;
+    const rawOffset = endRect.top - startCenterY;
+
+    if (!Number.isFinite(rawOffset)) {
+      setRangeStyle(null);
+      return;
+    }
+
+    const minOffset = 24;
+    const maxOffset = 320;
+    const offset = Math.max(minOffset, Math.min(rawOffset, maxOffset));
+    const height = Math.max(12, offset - 10);
+
+    setRangeStyle({ height, offset });
+  }, [hasRange, isActive, item.yearEnd, item.yearStart]);
 
   const dotVariants = {
     inactive: { scale: 0.9, opacity: 0.6 },
@@ -48,7 +94,7 @@ function TimelineRow({ item, isActive, isPinned, onAutoActivate, onClick }: Time
       onClick={onClick}
       aria-current={isActive ? "step" : undefined}
     >
-      <div className="timeline__row-track">
+      <div className="timeline__row-track" ref={trackRef}>
         <motion.span
           className={`timeline__dot timeline__dot--${item.topic}`}
           variants={dotVariants}
@@ -62,6 +108,7 @@ function TimelineRow({ item, isActive, isPinned, onAutoActivate, onClick }: Time
           <>
             <motion.span
               className={`timeline__duration timeline__duration--${item.topic}`}
+              style={rangeStyle ? { height: rangeStyle.height } : undefined}
               initial={{ opacity: 0, scaleY: 0.3 }}
               animate={{ opacity: 0.8, scaleY: 1 }}
               exit={{ opacity: 0, scaleY: 0.3 }}
@@ -76,6 +123,7 @@ function TimelineRow({ item, isActive, isPinned, onAutoActivate, onClick }: Time
               variants={dotVariants}
               initial="inactive"
               animate="active"
+              style={rangeStyle ? { y: rangeStyle.offset } : undefined}
               transition={
                 shouldReduceMotion
                   ? { duration: 0 }
@@ -234,6 +282,7 @@ export function Timeline() {
                         className="timeline__year-separator"
                         role="separator"
                         aria-label={String(item.yearStart)}
+                        data-timeline-year={item.yearStart}
                       >
                         <span className="timeline__year-separator-label">{item.yearStart}</span>
                       </div>
@@ -511,7 +560,6 @@ export function Timeline() {
         }
 
         .timeline__dot--secondary {
-          transform: translateY(30%);
           opacity: 0.8;
         }
 

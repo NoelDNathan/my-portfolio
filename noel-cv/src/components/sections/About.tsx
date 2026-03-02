@@ -61,6 +61,11 @@ export function About() {
       </div>
 
       <style>{`
+        .about {
+          padding-top: 0px;
+          padding-bottom: 0px;
+        }
+
         .about__grid {
           display: grid;
           gap: var(--space-12);
