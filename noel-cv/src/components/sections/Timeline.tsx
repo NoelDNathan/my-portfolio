@@ -14,13 +14,7 @@ interface TimelineRowProps {
   onClick: () => void;
 }
 
-function TimelineRow({
-  item,
-  isActive,
-  isPinned,
-  onAutoActivate,
-  onClick,
-}: TimelineRowProps) {
+function TimelineRow({ item, isActive, isPinned, onAutoActivate, onClick }: TimelineRowProps) {
   const ref = useRef<HTMLDivElement | null>(null);
   const isInView = useInView(ref, {
     margin: "-35% 0px -35% 0px",
@@ -64,16 +58,31 @@ function TimelineRow({
             shouldReduceMotion ? { duration: 0 } : { type: "spring", stiffness: 260, damping: 24 }
           }
         />
-        {hasRange && (
-          <motion.span
-            className={`timeline__dot timeline__dot--secondary timeline__dot--${item.topic}`}
-            variants={dotVariants}
-            initial="inactive"
-            animate={isActive ? "active" : "inactive"}
-            transition={
-              shouldReduceMotion ? { duration: 0 } : { type: "spring", stiffness: 260, damping: 24 }
-            }
-          />
+        {hasRange && isActive && (
+          <>
+            <motion.span
+              className={`timeline__duration timeline__duration--${item.topic}`}
+              initial={{ opacity: 0, scaleY: 0.3 }}
+              animate={{ opacity: 0.8, scaleY: 1 }}
+              exit={{ opacity: 0, scaleY: 0.3 }}
+              transition={
+                shouldReduceMotion
+                  ? { duration: 0 }
+                  : { type: "spring", stiffness: 260, damping: 24 }
+              }
+            />
+            <motion.span
+              className={`timeline__dot timeline__dot--secondary timeline__dot--${item.topic}`}
+              variants={dotVariants}
+              initial="inactive"
+              animate="active"
+              transition={
+                shouldReduceMotion
+                  ? { duration: 0 }
+                  : { type: "spring", stiffness: 260, damping: 24 }
+              }
+            />
+          </>
         )}
       </div>
       <div className="timeline__row-label">
@@ -225,8 +234,7 @@ export function Timeline() {
                     }
                   }}
                   onClick={() => {
-                    const currentScrollY =
-                      typeof window !== "undefined" ? window.scrollY : 0;
+                    const currentScrollY = typeof window !== "undefined" ? window.scrollY : 0;
                     setPinnedId(item.id);
                     setPinnedScrollY(currentScrollY);
                     setActiveId(item.id);
@@ -322,12 +330,11 @@ export function Timeline() {
 
         .timeline__events {
           position: relative;
-          padding-left: var(--space-2);
         }
 
         .timeline__tracks {
           position: absolute;
-          inset: 0 var(--space-4) 0 0;
+          inset: 0 var(--space-4) 0 var(--space-1);
           display: grid;
           grid-template-columns: repeat(5, minmax(0, 1fr));
           pointer-events: none;
@@ -426,6 +433,8 @@ export function Timeline() {
           align-items: center;
           min-height: 72px;
           padding: 0 var(--space-4) 0 var(--space-1);
+          opacity: 0.55;
+          transition: opacity 0.25s ease-out;
         }
 
         .timeline__row-track {
@@ -449,29 +458,84 @@ export function Timeline() {
           opacity: 0.8;
         }
 
+        .timeline__duration {
+          position: absolute;
+          top: 50%;
+          width: 10px;          
+          height: 40px;         
+          transform-origin: center;
+          transform: translate(-50%, -50%);
+          border-radius: 999px;
+        }
+
         .timeline__dot--education {
-          left: 10%;
+          left: 8.5%;
           background: rgba(56, 189, 248, 1);
         }
 
         .timeline__dot--professional {
-          left: 30%;
+          left: 28.3%;
           background: rgba(74, 222, 128, 1);
         }
 
         .timeline__dot--project {
-          left: 50%;
+          left: 48.5%;
           background: rgba(244, 114, 182, 1);
         }
 
         .timeline__dot--course {
-          left: 70%;
+          left: 68.5%;
           background: rgba(129, 140, 248, 1);
         }
 
         .timeline__dot--sport {
-          left: 90%;
+          left: 88.3%;
           background: rgba(251, 191, 36, 1);
+        }
+
+        .timeline__duration--education {
+          left: 8.5%;
+          background: linear-gradient(
+            to bottom,
+            rgba(56, 189, 248, 0.2),
+            rgba(56, 189, 248, 0.9)
+          );
+        }
+
+        .timeline__duration--professional {
+          left: 28.3%;
+          background: linear-gradient(
+            to bottom,
+            rgba(74, 222, 128, 0.2),
+            rgba(74, 222, 128, 0.9)
+          );
+        }
+
+        .timeline__duration--project {
+          left: 48.5%;
+          background: linear-gradient(
+            to bottom,
+            rgba(244, 114, 182, 0.2),
+            rgba(244, 114, 182, 0.9)
+          );
+        }
+
+        .timeline__duration--course {
+          left: 68.5%;
+          background: linear-gradient(
+            to bottom,
+            rgba(129, 140, 248, 0.2),
+            rgba(129, 140, 248, 0.9)
+          );
+        }
+
+        .timeline__duration--sport {
+          left: 89%;
+          background: linear-gradient(
+            to bottom,
+            rgba(251, 191, 36, 0.2),
+            rgba(251, 191, 36, 0.9)
+          );
         }
 
         .timeline__row-label {
@@ -497,6 +561,10 @@ export function Timeline() {
 
         .timeline__row--active .timeline__row-title {
           color: var(--color-accent);
+        }
+
+        .timeline__row--active {
+          opacity: 1;
         }
 
         .timeline__row:focus-visible {
