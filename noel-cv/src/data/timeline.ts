@@ -66,9 +66,15 @@ export const timelineItems: TimelineItem[] = [
     ],
     topic: "project",
     video: {
-      label: "NN – Breaking Barriers gameplay",
-      url: "",
+      label: "Breaking Barriers gameplay",
+      url: "https://www.youtube.com/embed/5GO3d6OP0bk",
     },
+    links: [
+      {
+        label: "Breaking Barriers gameplay (YouTube)",
+        url: "https://www.youtube.com/watch?v=5GO3d6OP0bk",
+      },
+    ],
   },
   {
     id: "data-science-ai-developer",
@@ -114,12 +120,6 @@ export const timelineItems: TimelineItem[] = [
       label: "NN – DataClea (PIA) demo",
       url: "",
     },
-    links: [
-      {
-        label: "DataClea project overview",
-        url: "#",
-      },
-    ],
   },
   {
     id: "erasmus-tartu",
@@ -144,7 +144,7 @@ export const timelineItems: TimelineItem[] = [
     links: [
       {
         label: "University of Tartu",
-        url: "#",
+        url: "https://ut.ee/et",
       },
     ],
   },
@@ -173,6 +173,12 @@ export const timelineItems: TimelineItem[] = [
       label: "Dog Poker Club demo",
       url: "",
     },
+    links: [
+      {
+        label: "Dog Poker Club",
+        url: "https://www.dogpokerclub.com/",
+      },
+    ],
   },
   {
     id: "ai-bachelor-upc",
@@ -199,7 +205,7 @@ export const timelineItems: TimelineItem[] = [
     links: [
       {
         label: "UPC – Artificial Intelligence Degree",
-        url: "#",
+        url: "https://www.upc.edu/es/grados/inteligencia-artificial-barcelona-fib",
       },
     ],
   },
@@ -226,12 +232,12 @@ export const timelineItems: TimelineItem[] = [
     topic: "professional",
     video: {
       label: "Vision-Guided Task Planning demo",
-      url: "",
+      url: "https://www.youtube.com/embed/LoswNZsRGok",
     },
     links: [
       {
-        label: "Thesis / project page",
-        url: "#",
+        label: "Vision-Guided Task Planning demo (YouTube Shorts)",
+        url: "https://www.youtube.com/shorts/LoswNZsRGok",
       },
     ],
   },
@@ -357,7 +363,7 @@ export const timelineItems: TimelineItem[] = [
     links: [
       {
         label: "Packengers AI Copilot",
-        url: "#",
+        url: "https://www.packengers.es/",
       },
     ],
   },
@@ -380,12 +386,12 @@ export const timelineItems: TimelineItem[] = [
     topic: "project",
     video: {
       label: "Healthi Bot demo",
-      url: "",
+      url: "https://www.youtube.com/embed/XFS1tF1-4gg",
     },
     links: [
       {
         label: "Healthi Bot",
-        url: "#",
+        url: "https://www.youtube.com/watch?v=XFS1tF1-4gg",
       },
     ],
   },

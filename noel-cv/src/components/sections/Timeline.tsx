@@ -490,7 +490,7 @@ export function Timeline() {
           z-index: 1;
           display: flex;
           flex-direction: column;
-          gap: var(--space-6);
+          gap: var(--space-8);
         }
 
         .timeline__year-separator {
@@ -883,7 +883,7 @@ export function Timeline() {
           }
 
           .timeline__rows {
-            gap: var(--space-5);
+            gap: var(--space-7);
           }
         }
 
@@ -897,7 +897,7 @@ export function Timeline() {
           }
 
           .timeline__rows {
-            gap: var(--space-4);
+            gap: var(--space-6);
           }
 
           .timeline__detail {
@@ -913,6 +913,11 @@ export function Timeline() {
           .timeline__layout {
             grid-template-columns: minmax(0, 3fr) minmax(0, 4fr);
             align-items: flex-start;
+          }
+
+          .timeline__detail-card {
+            max-height: calc(100vh - 64px - var(--space-8));
+            overflow-y: auto;
           }
         }
       `}</style>
