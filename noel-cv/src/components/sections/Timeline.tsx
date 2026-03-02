@@ -1,10 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  AnimatePresence,
-  motion,
-  useInView,
-  useReducedMotion,
-} from "framer-motion";
+import { AnimatePresence, motion, useInView, useReducedMotion } from "framer-motion";
 import {
   timelineItems,
   type TimelineItem,
@@ -14,10 +9,18 @@ import {
 interface TimelineRowProps {
   item: TimelineItem;
   isActive: boolean;
-  onActivate: () => void;
+  isPinned: boolean;
+  onAutoActivate: () => void;
+  onClick: () => void;
 }
 
-function TimelineRow({ item, isActive, onActivate }: TimelineRowProps) {
+function TimelineRow({
+  item,
+  isActive,
+  isPinned,
+  onAutoActivate,
+  onClick,
+}: TimelineRowProps) {
   const ref = useRef<HTMLDivElement | null>(null);
   const isInView = useInView(ref, {
     margin: "-35% 0px -35% 0px",
@@ -25,10 +28,10 @@ function TimelineRow({ item, isActive, onActivate }: TimelineRowProps) {
   const shouldReduceMotion = useReducedMotion();
 
   useEffect(() => {
-    if (isInView) {
-      onActivate();
+    if (isInView && !isPinned) {
+      onAutoActivate();
     }
-  }, [isInView, onActivate]);
+  }, [isInView, isPinned, onAutoActivate]);
 
   const hasRange = item.yearEnd !== undefined && item.yearEnd !== item.yearStart;
 
@@ -46,8 +49,9 @@ function TimelineRow({ item, isActive, onActivate }: TimelineRowProps) {
       ref={ref}
       className={`timeline__row ${isActive ? "timeline__row--active" : ""}`}
       tabIndex={0}
-      onFocus={onActivate}
-      onMouseEnter={onActivate}
+      onFocus={onAutoActivate}
+      onMouseEnter={onAutoActivate}
+      onClick={onClick}
       aria-current={isActive ? "step" : undefined}
     >
       <div className="timeline__row-track">
@@ -57,9 +61,7 @@ function TimelineRow({ item, isActive, onActivate }: TimelineRowProps) {
           initial="inactive"
           animate={isActive ? "active" : "inactive"}
           transition={
-            shouldReduceMotion
-              ? { duration: 0 }
-              : { type: "spring", stiffness: 260, damping: 24 }
+            shouldReduceMotion ? { duration: 0 } : { type: "spring", stiffness: 260, damping: 24 }
           }
         />
         {hasRange && (
@@ -69,9 +71,7 @@ function TimelineRow({ item, isActive, onActivate }: TimelineRowProps) {
             initial="inactive"
             animate={isActive ? "active" : "inactive"}
             transition={
-              shouldReduceMotion
-                ? { duration: 0 }
-                : { type: "spring", stiffness: 260, damping: 24 }
+              shouldReduceMotion ? { duration: 0 } : { type: "spring", stiffness: 260, damping: 24 }
             }
           />
         )}
@@ -135,22 +135,40 @@ export function Timeline() {
         }
         return a.id.localeCompare(b.id);
       }),
-    []
+    [],
   );
 
   const [activeId, setActiveId] = useState<string | null>(
-    sortedItems.length > 0 ? sortedItems[0].id : null
+    sortedItems.length > 0 ? sortedItems[0].id : null,
   );
+  const [pinnedId, setPinnedId] = useState<string | null>(null);
+  const [pinnedScrollY, setPinnedScrollY] = useState<number | null>(null);
 
-  const activeItem =
-    sortedItems.find((item) => item.id === activeId) ?? sortedItems[0];
+  useEffect(() => {
+    if (!pinnedId) {
+      return;
+    }
+
+    const handleScroll = () => {
+      if (pinnedScrollY === null) {
+        return;
+      }
+
+      const offset = Math.abs(window.scrollY - pinnedScrollY);
+      if (offset > 160) {
+        setPinnedId(null);
+        setPinnedScrollY(null);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [pinnedId, pinnedScrollY]);
+
+  const activeItem = sortedItems.find((item) => item.id === activeId) ?? sortedItems[0];
 
   return (
-    <section
-      id="timeline"
-      className="section timeline"
-      aria-labelledby="timeline-title"
-    >
+    <section id="timeline" className="section timeline" aria-labelledby="timeline-title">
       <div className="timeline__inner">
         <motion.h2
           id="timeline-title"
@@ -170,9 +188,8 @@ export function Timeline() {
           viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.5, delay: 0.1 }}
         >
-          A vertical journey through my education, professional experience,
-          projects, courses, and sport. Scroll to move through time – each
-          milestone expands as it comes into focus.
+          A vertical journey through my education, professional experience, projects, courses, and
+          sport. Scroll to move through time – each milestone expands as it comes into focus.
         </motion.p>
 
         <div className="timeline__layout">
@@ -201,7 +218,19 @@ export function Timeline() {
                   key={item.id}
                   item={item}
                   isActive={item.id === activeId}
-                  onActivate={() => setActiveId(item.id)}
+                  isPinned={pinnedId === item.id}
+                  onAutoActivate={() => {
+                    if (!pinnedId) {
+                      setActiveId(item.id);
+                    }
+                  }}
+                  onClick={() => {
+                    const currentScrollY =
+                      typeof window !== "undefined" ? window.scrollY : 0;
+                    setPinnedId(item.id);
+                    setPinnedScrollY(currentScrollY);
+                    setActiveId(item.id);
+                  }}
                 />
               ))}
             </div>
@@ -220,12 +249,8 @@ export function Timeline() {
                 >
                   <header className="timeline__detail-header">
                     <div>
-                      <h3 className="timeline__detail-title">
-                        {activeItem.title}
-                      </h3>
-                      <p className="timeline__detail-period">
-                        {activeItem.period}
-                      </p>
+                      <h3 className="timeline__detail-title">{activeItem.title}</h3>
+                      <p className="timeline__detail-period">{activeItem.period}</p>
                     </div>
                     <span
                       className={`timeline__item-topic timeline__item-topic--${activeItem.topic}`}
@@ -238,18 +263,14 @@ export function Timeline() {
                     </span>
                   </header>
 
-                  <p className="timeline__detail-description">
-                    {activeItem.description}
-                  </p>
+                  <p className="timeline__detail-description">{activeItem.description}</p>
 
                   {activeItem.learnings.length > 0 && (
                     <section
                       className="timeline__detail-learnings"
                       aria-label="Skills and learnings"
                     >
-                      <h4 className="timeline__detail-subtitle">
-                        Skills and learnings
-                      </h4>
+                      <h4 className="timeline__detail-subtitle">Skills and learnings</h4>
                       <ul>
                         {activeItem.learnings.map((learning, index) => (
                           <li key={index}>{learning}</li>
@@ -259,19 +280,12 @@ export function Timeline() {
                   )}
 
                   {activeItem.links && activeItem.links.length > 0 && (
-                    <section
-                      className="timeline__detail-links"
-                      aria-label="Related links"
-                    >
+                    <section className="timeline__detail-links" aria-label="Related links">
                       <h4 className="timeline__detail-subtitle">Links</h4>
                       <ul>
                         {activeItem.links.map((link) => (
                           <li key={link.label}>
-                            <a
-                              href={link.url}
-                              target="_blank"
-                              rel="noreferrer"
-                            >
+                            <a href={link.url} target="_blank" rel="noreferrer">
                               {link.label}
                             </a>
                           </li>
@@ -732,5 +746,3 @@ export function Timeline() {
     </section>
   );
 }
-
-
