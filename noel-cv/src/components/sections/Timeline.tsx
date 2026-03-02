@@ -4,17 +4,26 @@ import {
   timelineItems,
   type TimelineItem,
   type TimelineVideo as TimelineVideoMeta,
+  type TimelineTopic,
 } from "../../data/timeline";
 
 interface TimelineRowProps {
   item: TimelineItem;
   isActive: boolean;
   isPinned: boolean;
+  isSingleTrack: boolean;
   onAutoActivate: () => void;
   onClick: () => void;
 }
 
-function TimelineRow({ item, isActive, isPinned, onAutoActivate, onClick }: TimelineRowProps) {
+function TimelineRow({
+  item,
+  isActive,
+  isPinned,
+  isSingleTrack,
+  onAutoActivate,
+  onClick,
+}: TimelineRowProps) {
   const ref = useRef<HTMLDivElement | null>(null);
   const trackRef = useRef<HTMLDivElement | null>(null);
   const isInView = useInView(ref, {
@@ -105,7 +114,7 @@ function TimelineRow({ item, isActive, isPinned, onAutoActivate, onClick }: Time
     >
       <div className="timeline__row-track" ref={trackRef}>
         <motion.span
-          className={`timeline__dot timeline__dot--${item.topic}`}
+          className={`timeline__dot timeline__dot--${item.topic} ${isSingleTrack ? "timeline__dot--single" : ""}`}
           variants={dotVariants}
           initial="inactive"
           animate={isActive ? "active" : "inactive"}
@@ -116,7 +125,9 @@ function TimelineRow({ item, isActive, isPinned, onAutoActivate, onClick }: Time
         {hasRange && isActive && (
           <>
             <motion.span
-              className={`timeline__duration timeline__duration--${item.topic}`}
+              className={`timeline__duration timeline__duration--${item.topic} ${
+                isSingleTrack ? "timeline__duration--single" : ""
+              }`}
               style={rangeStyle ? { height: rangeStyle.height } : undefined}
               initial={{ opacity: 0, scaleY: 0.3 }}
               animate={{ opacity: 0.8, scaleY: 1 }}
@@ -128,7 +139,9 @@ function TimelineRow({ item, isActive, isPinned, onAutoActivate, onClick }: Time
               }
             />
             <motion.span
-              className={`timeline__dot timeline__dot--secondary timeline__dot--${item.topic}`}
+              className={`timeline__dot timeline__dot--secondary timeline__dot--${item.topic} ${
+                isSingleTrack ? "timeline__dot--single" : ""
+              }`}
               variants={dotVariants}
               initial="inactive"
               animate="active"
@@ -204,6 +217,21 @@ export function Timeline() {
     [],
   );
 
+  type TimelineTopicFilter = TimelineTopic | "all";
+  const topicFilters = useMemo(
+    () =>
+      [
+        { id: "all" as const, label: "All" },
+        { id: "education" as const, label: "Education" },
+        { id: "professional" as const, label: "Professional" },
+        { id: "project" as const, label: "Projects" },
+        { id: "course" as const, label: "Courses" },
+        { id: "sport" as const, label: "Sport" },
+      ] satisfies Array<{ id: TimelineTopicFilter; label: string }>,
+    [],
+  );
+
+  const [topicFilter, setTopicFilter] = useState<TimelineTopicFilter>("all");
   const [activeId, setActiveId] = useState<string | null>(
     sortedItems.length > 0 ? sortedItems[0].id : null,
   );
@@ -220,6 +248,15 @@ export function Timeline() {
   useEffect(() => {
     tourStatusRef.current = tourStatus;
   }, [tourStatus]);
+
+  const visibleItems = useMemo(() => {
+    if (topicFilter === "all") {
+      return sortedItems;
+    }
+    return sortedItems.filter((item) => item.topic === topicFilter);
+  }, [sortedItems, topicFilter]);
+
+  const isSingleTrack = topicFilter !== "all";
 
   const ensureItemIsVisible = (id: string) => {
     const node = itemContainerRefs.current.get(id);
@@ -278,24 +315,37 @@ export function Timeline() {
     setTourStatus("idle");
   };
 
+  const applyTopicFilter = (nextFilter: TimelineTopicFilter) => {
+    stopTour();
+    setTourIndex(0);
+    setPinnedId(null);
+    setPinnedScrollY(null);
+    const next = topicFilter === nextFilter ? "all" : nextFilter;
+    setTopicFilter(next);
+
+    const nextVisibleItems =
+      next === "all" ? sortedItems : sortedItems.filter((item) => item.topic === next);
+    setActiveId(nextVisibleItems[0]?.id ?? null);
+  };
+
   const runTourStep = (nextIndex: number) => {
     if (typeof window === "undefined") {
       return;
     }
 
-    if (sortedItems.length === 0) {
+    if (visibleItems.length === 0) {
       stopTour();
       setTourIndex(0);
       return;
     }
 
-    if (nextIndex >= sortedItems.length) {
+    if (nextIndex >= visibleItems.length) {
       stopTour();
-      setTourIndex(Math.max(0, sortedItems.length - 1));
+      setTourIndex(Math.max(0, visibleItems.length - 1));
       return;
     }
 
-    const item = sortedItems[nextIndex];
+    const item = visibleItems[nextIndex];
     setTourIndex(nextIndex);
     setPinnedId(null);
     setPinnedScrollY(null);
@@ -339,12 +389,18 @@ export function Timeline() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, [pinnedId, pinnedScrollY]);
 
-  const activeItem = sortedItems.find((item) => item.id === activeId) ?? sortedItems[0];
+  const activeItem = visibleItems.find((item) => item.id === activeId) ?? visibleItems[0] ?? null;
   const tourProgressLabel =
-    sortedItems.length > 0 ? `${Math.min(tourIndex + 1, sortedItems.length)}/${sortedItems.length}` : "0/0";
+    visibleItems.length > 0
+      ? `${Math.min(tourIndex + 1, visibleItems.length)}/${visibleItems.length}`
+      : "0/0";
 
   return (
-    <section id="timeline" className="section timeline" aria-labelledby="timeline-title">
+    <section
+      id="timeline"
+      className={`section timeline ${isSingleTrack ? "timeline--single-track" : ""}`}
+      aria-labelledby="timeline-title"
+    >
       <div className="timeline__inner">
         <motion.h2
           id="timeline-title"
@@ -383,7 +439,7 @@ export function Timeline() {
                 tourStatus === "playing" ? "timeline__tour-button--is-active" : ""
               }`}
               onClick={() => {
-                if (sortedItems.length === 0) {
+                if (visibleItems.length === 0) {
                   return;
                 }
 
@@ -393,7 +449,7 @@ export function Timeline() {
                   return;
                 }
 
-                const activeIndex = activeId ? sortedItems.findIndex((item) => item.id === activeId) : -1;
+                const activeIndex = activeId ? visibleItems.findIndex((item) => item.id === activeId) : -1;
                 setTourStatus("playing");
                 tourStatusRef.current = "playing";
                 runTourStep(activeIndex >= 0 ? activeIndex : 0);
@@ -434,31 +490,71 @@ export function Timeline() {
               <span className="timeline__tour-button-label">Stop</span>
             </button>
           </div>
+
+          <div className="timeline__filters" role="group" aria-label="Filter timeline by track">
+            <p className="timeline__filters-label">Filter by track</p>
+            <div className="timeline__filter-chips">
+              {topicFilters.map((filter) => {
+                const isActive = topicFilter === filter.id;
+                const isTopicFilter = filter.id !== "all";
+
+                return (
+                  <button
+                    key={filter.id}
+                    type="button"
+                    className={`timeline__chip ${isActive ? "timeline__chip--active" : ""} ${
+                      isTopicFilter ? `timeline__chip--${filter.id}` : "timeline__chip--all"
+                    }`}
+                    onClick={() => applyTopicFilter(filter.id)}
+                    aria-pressed={isActive}
+                  >
+                    {filter.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
 
         <div className="timeline__layout">
           <div className="timeline__events" aria-label="Timeline of experience">
-            <div className="timeline__tracks" aria-hidden="true">
-              <div className="timeline__track timeline__track--education">
-                <span className="timeline__track-label">Education</span>
-              </div>
-              <div className="timeline__track timeline__track--professional">
-                <span className="timeline__track-label">Professional</span>
-              </div>
-              <div className="timeline__track timeline__track--project">
-                <span className="timeline__track-label">Projects</span>
-              </div>
-              <div className="timeline__track timeline__track--course">
-                <span className="timeline__track-label">Courses</span>
-              </div>
-              <div className="timeline__track timeline__track--sport">
-                <span className="timeline__track-label">Sport</span>
-              </div>
+            <div
+              className="timeline__tracks"
+              aria-hidden="true"
+              style={{
+                gridTemplateColumns: isSingleTrack ? "minmax(0, 1fr)" : "repeat(5, minmax(0, 1fr))",
+              }}
+            >
+              {isSingleTrack ? (
+                <div className={`timeline__track timeline__track--${topicFilter}`}>
+                  <span className="timeline__track-label">
+                    {topicFilters.find((filter) => filter.id === topicFilter)?.label ?? "Track"}
+                  </span>
+                </div>
+              ) : (
+                <>
+                  <div className="timeline__track timeline__track--education">
+                    <span className="timeline__track-label">Education</span>
+                  </div>
+                  <div className="timeline__track timeline__track--professional">
+                    <span className="timeline__track-label">Professional</span>
+                  </div>
+                  <div className="timeline__track timeline__track--project">
+                    <span className="timeline__track-label">Projects</span>
+                  </div>
+                  <div className="timeline__track timeline__track--course">
+                    <span className="timeline__track-label">Courses</span>
+                  </div>
+                  <div className="timeline__track timeline__track--sport">
+                    <span className="timeline__track-label">Sport</span>
+                  </div>
+                </>
+              )}
             </div>
 
             <div className="timeline__rows">
-              {sortedItems.map((item, index) => {
-                const previous = index > 0 ? sortedItems[index - 1] : null;
+              {visibleItems.map((item, index) => {
+                const previous = index > 0 ? visibleItems[index - 1] : null;
                 const isNewYear = !previous || previous.yearStart !== item.yearStart;
                 const shouldShowYearSeparator = index > 0 && isNewYear;
 
@@ -488,6 +584,7 @@ export function Timeline() {
                         item={item}
                         isActive={item.id === activeId}
                         isPinned={pinnedId === item.id}
+                        isSingleTrack={isSingleTrack}
                         onAutoActivate={() => {
                           if (!pinnedId) {
                             setActiveId(item.id);
@@ -567,6 +664,22 @@ export function Timeline() {
                       </ul>
                     </section>
                   )}
+
+                  {activeItem.shortSkills && activeItem.shortSkills.length > 0 && (
+                    <section
+                      className="timeline__detail-short-skills"
+                      aria-label="Key skills"
+                    >
+                      <h4 className="timeline__detail-subtitle">Key skills</h4>
+                      <ul className="timeline__short-skills">
+                        {activeItem.shortSkills.map((skill, index) => (
+                          <li key={`${skill}-${index}`} className="timeline__short-skill">
+                            {skill}
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  )}
                 </motion.article>
               )}
             </AnimatePresence>
@@ -591,6 +704,7 @@ export function Timeline() {
           display: grid;
           gap: var(--space-4);
           padding: clamp(1rem, 2vw, 1.35rem);
+          margin-bottom: var(--space-10);
           border-radius: var(--radius-xl);
           border: 1px solid rgba(148, 163, 184, 0.35);
           background: radial-gradient(
@@ -632,6 +746,88 @@ export function Timeline() {
           flex-wrap: wrap;
           gap: var(--space-3);
           align-items: center;
+        }
+
+        .timeline__filters {
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-3);
+        }
+
+        .timeline__filters-label {
+          margin: 0;
+          font-size: var(--text-xs);
+          text-transform: uppercase;
+          letter-spacing: 0.14em;
+          color: rgba(226, 232, 240, 0.78);
+        }
+
+        .timeline__filter-chips {
+          display: flex;
+          flex-wrap: wrap;
+          gap: var(--space-2);
+          align-items: center;
+        }
+
+        .timeline__chip {
+          appearance: none;
+          border: 1px solid rgba(148, 163, 184, 0.38);
+          background: rgba(2, 6, 23, 0.35);
+          color: rgba(226, 232, 240, 0.9);
+          border-radius: 999px;
+          padding: 0.45rem 0.75rem;
+          font-size: var(--text-xs);
+          letter-spacing: 0.04em;
+          transition:
+            transform 160ms ease,
+            border-color 160ms ease,
+            background-color 160ms ease,
+            box-shadow 160ms ease;
+          user-select: none;
+        }
+
+        .timeline__chip:hover {
+          transform: translateY(-1px);
+          border-color: rgba(226, 232, 240, 0.6);
+          box-shadow: 0 10px 35px rgba(0, 0, 0, 0.35);
+        }
+
+        .timeline__chip:focus-visible {
+          outline: 2px solid rgba(94, 234, 212, 0.9);
+          outline-offset: 3px;
+        }
+
+        .timeline__chip--active {
+          background: rgba(15, 23, 42, 0.65);
+          border-color: rgba(94, 234, 212, 0.6);
+          box-shadow:
+            0 0 0 1px rgba(94, 234, 212, 0.25),
+            0 16px 60px rgba(94, 234, 212, 0.12);
+        }
+
+        .timeline__chip--education.timeline__chip--active {
+          border-color: rgba(56, 189, 248, 0.75);
+          box-shadow: 0 16px 60px rgba(56, 189, 248, 0.15);
+        }
+
+        .timeline__chip--professional.timeline__chip--active {
+          border-color: rgba(74, 222, 128, 0.75);
+          box-shadow: 0 16px 60px rgba(74, 222, 128, 0.15);
+        }
+
+        .timeline__chip--project.timeline__chip--active {
+          border-color: rgba(244, 114, 182, 0.75);
+          box-shadow: 0 16px 60px rgba(244, 114, 182, 0.15);
+        }
+
+        .timeline__chip--course.timeline__chip--active {
+          border-color: rgba(129, 140, 248, 0.75);
+          box-shadow: 0 16px 60px rgba(129, 140, 248, 0.15);
+        }
+
+        .timeline__chip--sport.timeline__chip--active {
+          border-color: rgba(251, 191, 36, 0.8);
+          box-shadow: 0 16px 60px rgba(251, 191, 36, 0.16);
         }
 
         .timeline__tour-button {
@@ -733,6 +929,10 @@ export function Timeline() {
           grid-template-columns: repeat(5, minmax(0, 1fr));
           pointer-events: none;
           z-index: 0;
+        }
+
+        .timeline--single-track .timeline__tracks {
+          inset: 0 var(--space-4);
         }
 
         .timeline__track {
@@ -868,6 +1068,11 @@ export function Timeline() {
           transition: opacity 0.25s ease-out;
         }
 
+        .timeline--single-track .timeline__row {
+          grid-template-columns: minmax(0, 1fr);
+          padding: 0 var(--space-4);
+        }
+
         .timeline__row-track {
           grid-column: 1 / -1;
           position: relative;
@@ -875,6 +1080,10 @@ export function Timeline() {
           grid-template-columns: repeat(5, minmax(0, 1fr));
           align-items: center;
           height: 40px;
+        }
+
+        .timeline--single-track .timeline__row-track {
+          grid-template-columns: minmax(0, 1fr);
         }
 
         .timeline__dot {
@@ -969,6 +1178,14 @@ export function Timeline() {
             rgba(251, 191, 36, 0.2),
             rgba(251, 191, 36, 0.9)
           );
+        }
+
+        .timeline__dot--single {
+          grid-column: 1;
+        }
+
+        .timeline__duration--single {
+          grid-column: 1;
         }
 
         .timeline__row-label {
@@ -1097,6 +1314,27 @@ export function Timeline() {
           display: flex;
           flex-direction: column;
           gap: 0.35rem;
+        }
+
+        .timeline__short-skills {
+          margin: 0;
+          padding: 0;
+          list-style: none;
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.5rem;
+        }
+
+        .timeline__short-skill {
+          display: inline-flex;
+          align-items: center;
+          padding: 0.25rem 0.6rem;
+          border-radius: 999px;
+          border: 1px solid rgba(148, 163, 184, 0.28);
+          background: rgba(2, 6, 23, 0.45);
+          font-size: var(--text-xs);
+          letter-spacing: 0.01em;
+          color: rgba(226, 232, 240, 0.88);
         }
 
         .timeline__detail-subtitle {

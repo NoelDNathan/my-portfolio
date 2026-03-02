@@ -24,6 +24,7 @@ export interface TimelineItem {
   summary: string;
   description: string;
   learnings: string[];
+  shortSkills?: string[];
   topic: TimelineTopic;
   video?: TimelineVideo | null;
   links?: TimelineLink[];
@@ -45,6 +46,7 @@ export const timelineItems: TimelineItem[] = [
       "Strong study discipline and time management.",
       "Ability to excel in a demanding academic environment.",
     ],
+    shortSkills: ["Mathematics", "Physics", "Technology", "Computer Science"],
     topic: "education",
     video: null,
   },
@@ -64,17 +66,13 @@ export const timelineItems: TimelineItem[] = [
       "Iterative game design: prototyping, playtesting, and balancing difficulty.",
       "Project planning and documentation for a complete game.",
     ],
+    shortSkills: ["Unity", "C#", "Blender", "Game Design"],
     topic: "project",
     video: {
       label: "Breaking Barriers gameplay",
       url: "https://www.youtube.com/embed/5GO3d6OP0bk",
     },
-    links: [
-      {
-        label: "Breaking Barriers gameplay (YouTube)",
-        url: "https://www.youtube.com/watch?v=5GO3d6OP0bk",
-      },
-    ],
+
   },
   {
     id: "data-science-ai-developer",
@@ -92,6 +90,7 @@ export const timelineItems: TimelineItem[] = [
       "Design of data visualization pipelines for complex datasets.",
       "Collaboration in applied data science projects with stakeholders.",
     ],
+    shortSkills: ["Python", "Machine Learning", "Geospatial", "Data Viz"],
     topic: "professional",
     video: null,
   },
@@ -115,10 +114,11 @@ export const timelineItems: TimelineItem[] = [
       "Risk assessment and mitigation for early-stage AI products.",
       "Collaboration with corporate partners in an innovation context.",
     ],
+    shortSkills: ["LLMs", "Prompting", "Azure", "APIs", "React"],
     topic: "project",
     video: {
       label: "NN – DataClea (PIA) demo",
-      url: "",
+      url: "https://www.youtube.com/embed/8luinEnWZ-w",
     },
   },
   {
@@ -139,6 +139,7 @@ export const timelineItems: TimelineItem[] = [
       "Academic and professional communication in English.",
       "Cultural adaptability and collaboration in international teams.",
     ],
+    shortSkills: ["ZK Proofs", "Cryptography", "Information Retrieval", "Explainable ML"],
     topic: "education",
     video: null,
     links: [
@@ -168,6 +169,7 @@ export const timelineItems: TimelineItem[] = [
       "Testing and deployment workflows with Hardhat.",
       "Secure system design and threat modeling in decentralized environments.",
     ],
+    shortSkills: ["Solidity", "Circom", "Rust", "React", "Hardhat"],
     topic: "project",
     video: {
       label: "Dog Poker Club demo",
@@ -200,6 +202,7 @@ export const timelineItems: TimelineItem[] = [
       "Applied cryptography, zero-knowledge proofs, and information retrieval.",
       "Robotics, control systems, and data-driven modeling.",
     ],
+    shortSkills: ["Machine Learning", "Deep Learning", "Computer Vision", "NLP", "HPC"],
     topic: "education",
     video: null,
     links: [
@@ -229,17 +232,12 @@ export const timelineItems: TimelineItem[] = [
       "Simulation and 3D modeling for robotics experiments.",
       "Collaboration between academia and industry partners.",
     ],
+    shortSkills: ["Python", "Computer Vision", "Reinforcement Learning", "MATLAB", "Robotics"],
     topic: "professional",
     video: {
       label: "Vision-Guided Task Planning demo",
       url: "https://www.youtube.com/embed/LoswNZsRGok",
     },
-    links: [
-      {
-        label: "Vision-Guided Task Planning demo (YouTube Shorts)",
-        url: "https://www.youtube.com/shorts/LoswNZsRGok",
-      },
-    ],
   },
   {
     id: "rugby-coach-qualification",
@@ -256,6 +254,7 @@ export const timelineItems: TimelineItem[] = [
       "Communication skills for guiding and motivating athletes.",
       "Understanding of structured practice sessions for youth teams.",
     ],
+    shortSkills: ["Coaching", "Leadership", "Training Design", "Communication"],
     topic: "course",
     video: null,
   },
@@ -276,6 +275,7 @@ export const timelineItems: TimelineItem[] = [
       "Design of pick-and-place and palletizing applications.",
       "Use of coordinate systems and frames for flexible redeployment.",
     ],
+    shortSkills: ["Universal Robots", "Robot Programming", "Safety Config", "Motion Planning"],
     topic: "course",
     video: null,
   },
@@ -295,6 +295,7 @@ export const timelineItems: TimelineItem[] = [
       "Conflict resolution and emotional intelligence with children.",
       "Mentoring and creating a positive, inclusive team culture.",
     ],
+    shortSkills: ["Mentoring", "Leadership", "Conflict Resolution", "Team Management"],
     topic: "sport",
     video: null,
   },
@@ -314,6 +315,7 @@ export const timelineItems: TimelineItem[] = [
       "Performance under pressure and resilience after setbacks.",
       "Transferable soft skills: communication, leadership by example, and strategic thinking.",
     ],
+    shortSkills: ["Teamwork", "Discipline", "Resilience", "Strategy"],
     topic: "sport",
     video: null,
   },
@@ -333,6 +335,7 @@ export const timelineItems: TimelineItem[] = [
       "Optimization techniques to run models efficiently in the browser.",
       "Front-end integration of AI models for interactive experiences.",
     ],
+    shortSkills: ["LLMs", "Transformers", "Fine-tuning", "Web Inference"],
     topic: "project",
     video: null,
   },
@@ -355,6 +358,7 @@ export const timelineItems: TimelineItem[] = [
       "Team supervision, mentorship, and technical leadership.",
       "Communication with stakeholders to translate business needs into technical solutions.",
     ],
+    shortSkills: ["OR-Tools", "React", "FastAPI", "AWS", "Docker"],
     topic: "professional",
     video: {
       label: "Packengers AI Copilot demo",
@@ -383,17 +387,12 @@ export const timelineItems: TimelineItem[] = [
       "Integration with external services and legacy systems for scheduling.",
       "Conversation design for robust, user-friendly appointment booking.",
     ],
+    shortSkills: ["Voice AI", "Playwright", "Tooling", "Conversation Design"],
     topic: "project",
     video: {
       label: "Healthi Bot demo",
       url: "https://www.youtube.com/embed/XFS1tF1-4gg",
     },
-    links: [
-      {
-        label: "Healthi Bot",
-        url: "https://www.youtube.com/watch?v=XFS1tF1-4gg",
-      },
-    ],
   },
   {
     id: "privacy-legal-course",
@@ -411,6 +410,7 @@ export const timelineItems: TimelineItem[] = [
       "Risk assessment and documentation for data processing activities.",
       "Alignment of technical systems with legal and ethical requirements.",
     ],
+    shortSkills: ["GDPR", "Privacy", "Compliance", "Risk Assessment"],
     topic: "course",
     video: null,
   },
