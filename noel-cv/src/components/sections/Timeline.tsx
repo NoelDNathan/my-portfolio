@@ -11,7 +11,6 @@ interface TimelineRowProps {
   item: TimelineItem;
   isActive: boolean;
   isPinned: boolean;
-  isSingleTrack: boolean;
   onAutoActivate: () => void;
   onClick: () => void;
 }
@@ -20,7 +19,6 @@ function TimelineRow({
   item,
   isActive,
   isPinned,
-  isSingleTrack,
   onAutoActivate,
   onClick,
 }: TimelineRowProps) {
@@ -114,7 +112,7 @@ function TimelineRow({
     >
       <div className="timeline__row-track" ref={trackRef}>
         <motion.span
-          className={`timeline__dot timeline__dot--${item.topic} ${isSingleTrack ? "timeline__dot--single" : ""}`}
+          className={`timeline__dot timeline__dot--${item.topic}`}
           variants={dotVariants}
           initial="inactive"
           animate={isActive ? "active" : "inactive"}
@@ -125,9 +123,7 @@ function TimelineRow({
         {hasRange && isActive && (
           <>
             <motion.span
-              className={`timeline__duration timeline__duration--${item.topic} ${
-                isSingleTrack ? "timeline__duration--single" : ""
-              }`}
+              className={`timeline__duration timeline__duration--${item.topic}`}
               style={rangeStyle ? { height: rangeStyle.height } : undefined}
               initial={{ opacity: 0, scaleY: 0.3 }}
               animate={{ opacity: 0.8, scaleY: 1 }}
@@ -139,9 +135,7 @@ function TimelineRow({
               }
             />
             <motion.span
-              className={`timeline__dot timeline__dot--secondary timeline__dot--${item.topic} ${
-                isSingleTrack ? "timeline__dot--single" : ""
-              }`}
+              className={`timeline__dot timeline__dot--secondary timeline__dot--${item.topic}`}
               variants={dotVariants}
               initial="inactive"
               animate="active"
@@ -217,6 +211,23 @@ export function Timeline() {
     [],
   );
 
+  const allTopics = useMemo(
+    () => ["education", "professional", "project", "course", "sport"] as const satisfies readonly TimelineTopic[],
+    [],
+  );
+
+  const topicLabelById = useMemo(
+    () =>
+      ({
+        education: "Education",
+        professional: "Professional",
+        project: "Projects",
+        course: "Courses",
+        sport: "Sport",
+      }) satisfies Record<TimelineTopic, string>,
+    [],
+  );
+
   type TimelineTopicFilter = TimelineTopic | "all";
   const topicFilters = useMemo(
     () =>
@@ -231,7 +242,7 @@ export function Timeline() {
     [],
   );
 
-  const [topicFilter, setTopicFilter] = useState<TimelineTopicFilter>("all");
+  const [selectedTopics, setSelectedTopics] = useState<TimelineTopic[]>([]);
   const [activeId, setActiveId] = useState<string | null>(
     sortedItems.length > 0 ? sortedItems[0].id : null,
   );
@@ -249,26 +260,13 @@ export function Timeline() {
     tourStatusRef.current = tourStatus;
   }, [tourStatus]);
 
-  const activeTopic: TimelineTopic | null = topicFilter === "all" ? null : topicFilter;
+  const selectedTopicsSet = useMemo(() => new Set(selectedTopics), [selectedTopics]);
   const visibleItems = useMemo(() => {
-    if (!activeTopic) {
+    if (selectedTopics.length === 0) {
       return sortedItems;
     }
-    return sortedItems.filter((item) => item.topic === activeTopic);
-  }, [sortedItems, activeTopic]);
-
-  const isSingleTrack = activeTopic !== null;
-  const topicLabelById = useMemo(
-    () =>
-      ({
-        education: "Education",
-        professional: "Professional",
-        project: "Projects",
-        course: "Courses",
-        sport: "Sport",
-      }) satisfies Record<TimelineTopic, string>,
-    [],
-  );
+    return sortedItems.filter((item) => selectedTopicsSet.has(item.topic));
+  }, [sortedItems, selectedTopics, selectedTopicsSet]);
 
   const ensureItemIsVisible = (id: string) => {
     const node = itemContainerRefs.current.get(id);
@@ -332,11 +330,38 @@ export function Timeline() {
     setTourIndex(0);
     setPinnedId(null);
     setPinnedScrollY(null);
-    const next = topicFilter === nextFilter ? "all" : nextFilter;
-    setTopicFilter(next);
+
+    if (nextFilter === "all") {
+      setSelectedTopics([]);
+      setActiveId(sortedItems[0]?.id ?? null);
+      return;
+    }
+
+    if (selectedTopics.length === 0) {
+      setSelectedTopics([nextFilter]);
+      setActiveId(sortedItems.find((item) => item.topic === nextFilter)?.id ?? null);
+      return;
+    }
+
+    const nextSet = new Set<TimelineTopic>(selectedTopics);
+    if (nextSet.has(nextFilter)) {
+      nextSet.delete(nextFilter);
+    } else {
+      nextSet.add(nextFilter);
+    }
+
+    const nextSelected = allTopics.filter((topic) => nextSet.has(topic));
+    setSelectedTopics(nextSelected);
 
     const nextVisibleItems =
-      next === "all" ? sortedItems : sortedItems.filter((item) => item.topic === next);
+      nextSelected.length === 0
+        ? sortedItems
+        : sortedItems.filter((item) => nextSet.has(item.topic));
+
+    if (activeId && nextVisibleItems.some((item) => item.id === activeId)) {
+      return;
+    }
+
     setActiveId(nextVisibleItems[0]?.id ?? null);
   };
 
@@ -410,7 +435,7 @@ export function Timeline() {
   return (
     <section
       id="timeline"
-      className={`section timeline ${isSingleTrack ? "timeline--single-track" : ""}`}
+      className="section timeline"
       aria-labelledby="timeline-title"
     >
       <div className="timeline__inner">
@@ -507,7 +532,8 @@ export function Timeline() {
             <p className="timeline__filters-label">Filter by track</p>
             <div className="timeline__filter-chips">
               {topicFilters.map((filter) => {
-                const isActive = topicFilter === filter.id;
+                const isActive =
+                  filter.id === "all" ? selectedTopics.length === 0 : selectedTopicsSet.has(filter.id);
                 const isTopicFilter = filter.id !== "all";
 
                 return (
@@ -534,65 +560,23 @@ export function Timeline() {
               className="timeline__tracks"
               role="group"
               aria-label="Timeline tracks"
-              style={{
-                gridTemplateColumns: isSingleTrack ? "minmax(0, 1fr)" : "repeat(5, minmax(0, 1fr))",
-              }}
             >
-              {isSingleTrack ? (
-                <button
-                  type="button"
-                  className={`timeline__track timeline__track--${activeTopic} timeline__track--is-active`}
-                  onClick={() => applyTopicFilter(activeTopic!)}
-                  aria-pressed={true}
-                >
-                  <span className="timeline__track-label">
-                    {topicLabelById[activeTopic!]}
-                  </span>
-                </button>
-              ) : (
-                <>
+              {allTopics.map((topic) => {
+                const isActive = selectedTopics.length > 0 && selectedTopicsSet.has(topic);
+                return (
                   <button
+                    key={topic}
                     type="button"
-                    className="timeline__track timeline__track--education"
-                    onClick={() => applyTopicFilter("education")}
-                    aria-pressed={false}
+                    className={`timeline__track timeline__track--${topic} ${
+                      isActive ? "timeline__track--is-active" : ""
+                    }`}
+                    onClick={() => applyTopicFilter(topic)}
+                    aria-pressed={isActive}
                   >
-                    <span className="timeline__track-label">Education</span>
+                    <span className="timeline__track-label">{topicLabelById[topic]}</span>
                   </button>
-                  <button
-                    type="button"
-                    className="timeline__track timeline__track--professional"
-                    onClick={() => applyTopicFilter("professional")}
-                    aria-pressed={false}
-                  >
-                    <span className="timeline__track-label">Professional</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="timeline__track timeline__track--project"
-                    onClick={() => applyTopicFilter("project")}
-                    aria-pressed={false}
-                  >
-                    <span className="timeline__track-label">Projects</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="timeline__track timeline__track--course"
-                    onClick={() => applyTopicFilter("course")}
-                    aria-pressed={false}
-                  >
-                    <span className="timeline__track-label">Courses</span>
-                  </button>
-                  <button
-                    type="button"
-                    className="timeline__track timeline__track--sport"
-                    onClick={() => applyTopicFilter("sport")}
-                    aria-pressed={false}
-                  >
-                    <span className="timeline__track-label">Sport</span>
-                  </button>
-                </>
-              )}
+                );
+              })}
             </div>
 
             <div className="timeline__rows">
@@ -627,7 +611,6 @@ export function Timeline() {
                         item={item}
                         isActive={item.id === activeId}
                         isPinned={pinnedId === item.id}
-                        isSingleTrack={isSingleTrack}
                         onAutoActivate={() => {
                           if (!pinnedId) {
                             setActiveId(item.id);
@@ -974,10 +957,6 @@ export function Timeline() {
           z-index: 0;
         }
 
-        .timeline--single-track .timeline__tracks {
-          inset: 0 var(--space-4);
-        }
-
         .timeline__track {
           position: relative;
           appearance: none;
@@ -1146,11 +1125,6 @@ export function Timeline() {
           transition: opacity 0.25s ease-out;
         }
 
-        .timeline--single-track .timeline__row {
-          grid-template-columns: minmax(0, 1fr);
-          padding: 0 var(--space-4);
-        }
-
         .timeline__row-track {
           grid-column: 1 / -1;
           position: relative;
@@ -1158,10 +1132,6 @@ export function Timeline() {
           grid-template-columns: repeat(5, minmax(0, 1fr));
           align-items: center;
           height: 40px;
-        }
-
-        .timeline--single-track .timeline__row-track {
-          grid-template-columns: minmax(0, 1fr);
         }
 
         .timeline__dot {
@@ -1256,14 +1226,6 @@ export function Timeline() {
             rgba(251, 191, 36, 0.2),
             rgba(251, 191, 36, 0.9)
           );
-        }
-
-        .timeline__dot--single {
-          grid-column: 1;
-        }
-
-        .timeline__duration--single {
-          grid-column: 1;
         }
 
         .timeline__row-label {
