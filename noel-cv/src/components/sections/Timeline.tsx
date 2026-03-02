@@ -1,0 +1,736 @@
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  AnimatePresence,
+  motion,
+  useInView,
+  useReducedMotion,
+} from "framer-motion";
+import {
+  timelineItems,
+  type TimelineItem,
+  type TimelineVideo as TimelineVideoMeta,
+} from "../../data/timeline";
+
+interface TimelineRowProps {
+  item: TimelineItem;
+  isActive: boolean;
+  onActivate: () => void;
+}
+
+function TimelineRow({ item, isActive, onActivate }: TimelineRowProps) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const isInView = useInView(ref, {
+    margin: "-35% 0px -35% 0px",
+  });
+  const shouldReduceMotion = useReducedMotion();
+
+  useEffect(() => {
+    if (isInView) {
+      onActivate();
+    }
+  }, [isInView, onActivate]);
+
+  const hasRange = item.yearEnd !== undefined && item.yearEnd !== item.yearStart;
+
+  const dotVariants = {
+    inactive: { scale: 0.9, opacity: 0.6 },
+    active: {
+      scale: 1.2,
+      opacity: 1,
+      boxShadow: "0 0 18px rgba(94, 234, 212, 0.9)",
+    },
+  };
+
+  return (
+    <div
+      ref={ref}
+      className={`timeline__row ${isActive ? "timeline__row--active" : ""}`}
+      tabIndex={0}
+      onFocus={onActivate}
+      onMouseEnter={onActivate}
+      aria-current={isActive ? "step" : undefined}
+    >
+      <div className="timeline__row-track">
+        <motion.span
+          className={`timeline__dot timeline__dot--${item.topic}`}
+          variants={dotVariants}
+          initial="inactive"
+          animate={isActive ? "active" : "inactive"}
+          transition={
+            shouldReduceMotion
+              ? { duration: 0 }
+              : { type: "spring", stiffness: 260, damping: 24 }
+          }
+        />
+        {hasRange && (
+          <motion.span
+            className={`timeline__dot timeline__dot--secondary timeline__dot--${item.topic}`}
+            variants={dotVariants}
+            initial="inactive"
+            animate={isActive ? "active" : "inactive"}
+            transition={
+              shouldReduceMotion
+                ? { duration: 0 }
+                : { type: "spring", stiffness: 260, damping: 24 }
+            }
+          />
+        )}
+      </div>
+      <div className="timeline__row-label">
+        <p className="timeline__row-title">{item.title}</p>
+        <p className="timeline__row-period">{item.period}</p>
+      </div>
+    </div>
+  );
+}
+
+interface TimelineVideoProps {
+  video?: TimelineVideoMeta | null;
+}
+
+function TimelineVideo({ video }: TimelineVideoProps) {
+  if (!video) {
+    return null;
+  }
+
+  const hasUrl = Boolean(video.url);
+
+  return (
+    <section className="timeline__video" aria-label="Project video">
+      <h3 className="timeline__video-title">Project video</h3>
+      {hasUrl ? (
+        <div className="timeline__video-frame">
+          <iframe
+            src={video.url}
+            title={video.label}
+            loading="lazy"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        </div>
+      ) : (
+        <div className="timeline__video-placeholder">
+          <div className="timeline__video-icon" aria-hidden="true" />
+          <div className="timeline__video-text">
+            <p className="timeline__video-label">{video.label}</p>
+            <p className="timeline__video-hint">Video coming soon.</p>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+export function Timeline() {
+  const sortedItems = useMemo(
+    () =>
+      [...timelineItems].sort((a, b) => {
+        if (a.yearStart !== b.yearStart) {
+          return a.yearStart - b.yearStart;
+        }
+        const aEnd = a.yearEnd ?? a.yearStart;
+        const bEnd = b.yearEnd ?? b.yearStart;
+        if (aEnd !== bEnd) {
+          return aEnd - bEnd;
+        }
+        return a.id.localeCompare(b.id);
+      }),
+    []
+  );
+
+  const [activeId, setActiveId] = useState<string | null>(
+    sortedItems.length > 0 ? sortedItems[0].id : null
+  );
+
+  const activeItem =
+    sortedItems.find((item) => item.id === activeId) ?? sortedItems[0];
+
+  return (
+    <section
+      id="timeline"
+      className="section timeline"
+      aria-labelledby="timeline-title"
+    >
+      <div className="timeline__inner">
+        <motion.h2
+          id="timeline-title"
+          className="section-title"
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.5 }}
+        >
+          Journey Timeline
+        </motion.h2>
+
+        <motion.p
+          className="timeline__intro"
+          initial={{ opacity: 0, y: 12 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-80px" }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+        >
+          A vertical journey through my education, professional experience,
+          projects, courses, and sport. Scroll to move through time – each
+          milestone expands as it comes into focus.
+        </motion.p>
+
+        <div className="timeline__layout">
+          <div className="timeline__events" aria-label="Timeline of experience">
+            <div className="timeline__tracks" aria-hidden="true">
+              <div className="timeline__track timeline__track--education">
+                <span className="timeline__track-label">Education</span>
+              </div>
+              <div className="timeline__track timeline__track--professional">
+                <span className="timeline__track-label">Professional</span>
+              </div>
+              <div className="timeline__track timeline__track--project">
+                <span className="timeline__track-label">Projects</span>
+              </div>
+              <div className="timeline__track timeline__track--course">
+                <span className="timeline__track-label">Courses</span>
+              </div>
+              <div className="timeline__track timeline__track--sport">
+                <span className="timeline__track-label">Sport</span>
+              </div>
+            </div>
+
+            <div className="timeline__rows">
+              {sortedItems.map((item) => (
+                <TimelineRow
+                  key={item.id}
+                  item={item}
+                  isActive={item.id === activeId}
+                  onActivate={() => setActiveId(item.id)}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="timeline__detail" aria-live="polite">
+            <AnimatePresence mode="wait">
+              {activeItem && (
+                <motion.article
+                  key={activeItem.id}
+                  className="timeline__detail-card"
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <header className="timeline__detail-header">
+                    <div>
+                      <h3 className="timeline__detail-title">
+                        {activeItem.title}
+                      </h3>
+                      <p className="timeline__detail-period">
+                        {activeItem.period}
+                      </p>
+                    </div>
+                    <span
+                      className={`timeline__item-topic timeline__item-topic--${activeItem.topic}`}
+                    >
+                      {activeItem.topic === "education" && "Education"}
+                      {activeItem.topic === "project" && "Project"}
+                      {activeItem.topic === "professional" && "Professional"}
+                      {activeItem.topic === "course" && "Course"}
+                      {activeItem.topic === "sport" && "Sport"}
+                    </span>
+                  </header>
+
+                  <p className="timeline__detail-description">
+                    {activeItem.description}
+                  </p>
+
+                  {activeItem.learnings.length > 0 && (
+                    <section
+                      className="timeline__detail-learnings"
+                      aria-label="Skills and learnings"
+                    >
+                      <h4 className="timeline__detail-subtitle">
+                        Skills and learnings
+                      </h4>
+                      <ul>
+                        {activeItem.learnings.map((learning, index) => (
+                          <li key={index}>{learning}</li>
+                        ))}
+                      </ul>
+                    </section>
+                  )}
+
+                  {activeItem.links && activeItem.links.length > 0 && (
+                    <section
+                      className="timeline__detail-links"
+                      aria-label="Related links"
+                    >
+                      <h4 className="timeline__detail-subtitle">Links</h4>
+                      <ul>
+                        {activeItem.links.map((link) => (
+                          <li key={link.label}>
+                            <a
+                              href={link.url}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              {link.label}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  )}
+
+                  <TimelineVideo video={activeItem.video} />
+                </motion.article>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+      </div>
+
+      <style>{`
+        .timeline__inner {
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-6);
+        }
+
+        .timeline__intro {
+          max-width: 45rem;
+          font-size: var(--text-base);
+          color: var(--color-text-muted);
+        }
+
+        .timeline__layout {
+          display: grid;
+          gap: var(--space-10);
+        }
+
+        .timeline__events {
+          position: relative;
+          padding-left: var(--space-2);
+        }
+
+        .timeline__tracks {
+          position: absolute;
+          inset: 0 var(--space-4) 0 0;
+          display: grid;
+          grid-template-columns: repeat(5, minmax(0, 1fr));
+          pointer-events: none;
+          z-index: 0;
+        }
+
+        .timeline__track {
+          position: relative;
+        }
+
+        .timeline__track::before {
+          content: "";
+          position: absolute;
+          top: 0;
+          bottom: 0;
+          left: 50%;
+          width: 2px;
+          transform: translateX(-50%);
+          opacity: 0.5;
+          background: linear-gradient(
+            to bottom,
+            rgba(148, 163, 184, 0.1),
+            rgba(148, 163, 184, 0.8),
+            rgba(148, 163, 184, 0.1)
+          );
+        }
+
+        .timeline__track-label {
+          position: absolute;
+          top: -1.75rem;
+          left: 50%;
+          transform: translateX(-50%);
+          font-size: var(--text-xs);
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          color: var(--color-text-muted);
+          white-space: nowrap;
+        }
+
+        .timeline__track--education::before {
+          background: linear-gradient(
+            to bottom,
+            rgba(56, 189, 248, 0.1),
+            rgba(56, 189, 248, 0.9),
+            rgba(56, 189, 248, 0.1)
+          );
+        }
+
+        .timeline__track--professional::before {
+          background: linear-gradient(
+            to bottom,
+            rgba(74, 222, 128, 0.1),
+            rgba(74, 222, 128, 0.9),
+            rgba(74, 222, 128, 0.1)
+          );
+        }
+
+        .timeline__track--project::before {
+          background: linear-gradient(
+            to bottom,
+            rgba(244, 114, 182, 0.1),
+            rgba(244, 114, 182, 0.9),
+            rgba(244, 114, 182, 0.1)
+          );
+        }
+
+        .timeline__track--course::before {
+          background: linear-gradient(
+            to bottom,
+            rgba(129, 140, 248, 0.1),
+            rgba(129, 140, 248, 0.9),
+            rgba(129, 140, 248, 0.1)
+          );
+        }
+
+        .timeline__track--sport::before {
+          background: linear-gradient(
+            to bottom,
+            rgba(251, 191, 36, 0.1),
+            rgba(251, 191, 36, 0.9),
+            rgba(251, 191, 36, 0.1)
+          );
+        }
+
+        .timeline__rows {
+          position: relative;
+          z-index: 1;
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-6);
+        }
+
+        .timeline__row {
+          display: grid;
+          grid-template-columns: repeat(5, minmax(0, 1fr));
+          align-items: center;
+          min-height: 72px;
+          padding: 0 var(--space-4) 0 var(--space-1);
+        }
+
+        .timeline__row-track {
+          grid-column: 1 / -1;
+          position: relative;
+          height: 0;
+        }
+
+        .timeline__dot {
+          position: absolute;
+          top: 50%;
+          width: 14px;
+          height: 14px;
+          border-radius: 999px;
+          border: 2px solid var(--color-surface);
+          transform: translate(-50%, -50%);
+        }
+
+        .timeline__dot--secondary {
+          transform: translate(-50%, 30%);
+          opacity: 0.8;
+        }
+
+        .timeline__dot--education {
+          left: 10%;
+          background: rgba(56, 189, 248, 1);
+        }
+
+        .timeline__dot--professional {
+          left: 30%;
+          background: rgba(74, 222, 128, 1);
+        }
+
+        .timeline__dot--project {
+          left: 50%;
+          background: rgba(244, 114, 182, 1);
+        }
+
+        .timeline__dot--course {
+          left: 70%;
+          background: rgba(129, 140, 248, 1);
+        }
+
+        .timeline__dot--sport {
+          left: 90%;
+          background: rgba(251, 191, 36, 1);
+        }
+
+        .timeline__row-label {
+          grid-column: 1 / -1;
+          margin-top: var(--space-4);
+          display: flex;
+          flex-direction: column;
+          gap: 0.1rem;
+          padding-left: var(--space-2);
+        }
+
+        .timeline__row-title {
+          margin: 0;
+          font-size: var(--text-sm);
+          font-weight: 500;
+        }
+
+        .timeline__row-period {
+          margin: 0;
+          font-size: var(--text-xs);
+          color: var(--color-text-muted);
+        }
+
+        .timeline__row--active .timeline__row-title {
+          color: var(--color-accent);
+        }
+
+        .timeline__row:focus-visible {
+          outline: 2px solid var(--color-accent);
+          outline-offset: 2px;
+        }
+
+        .timeline__detail {
+          position: sticky;
+          align-self: flex-start;
+          top: calc(64px + var(--space-6));
+        }
+
+        .timeline__detail-card {
+          padding: var(--space-5);
+          border-radius: var(--radius-xl);
+          background: radial-gradient(
+              circle at top left,
+              rgba(120, 120, 255, 0.18),
+              transparent 55%
+            ),
+            rgba(12, 12, 18, 0.98);
+          border: 1px solid rgba(148, 163, 184, 0.4);
+          box-shadow: 0 22px 55px rgba(0, 0, 0, 0.65);
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-4);
+        }
+
+        .timeline__detail-header {
+          display: flex;
+          justify-content: space-between;
+          gap: var(--space-4);
+          align-items: flex-start;
+        }
+
+        .timeline__detail-title {
+          margin: 0 0 var(--space-1);
+          font-size: var(--text-xl);
+        }
+
+        .timeline__detail-period {
+          margin: 0;
+          font-size: var(--text-sm);
+          color: var(--color-text-muted);
+        }
+
+        .timeline__item-topic {
+          padding: 0.125rem 0.5rem;
+          border-radius: 999px;
+          font-size: var(--text-xs);
+          font-weight: 500;
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          white-space: nowrap;
+        }
+
+        .timeline__item-topic--education {
+          background: rgba(56, 189, 248, 0.12);
+          color: rgb(125, 211, 252);
+        }
+
+        .timeline__item-topic--project {
+          background: rgba(244, 114, 182, 0.12);
+          color: rgb(251, 207, 232);
+        }
+
+        .timeline__item-topic--professional {
+          background: rgba(74, 222, 128, 0.12);
+          color: rgb(190, 242, 100);
+        }
+
+        .timeline__item-topic--course {
+          background: rgba(129, 140, 248, 0.12);
+          color: rgb(165, 180, 252);
+        }
+
+        .timeline__item-topic--sport {
+          background: rgba(251, 191, 36, 0.12);
+          color: rgb(252, 211, 77);
+        }
+
+        .timeline__detail-description {
+          margin: 0;
+          font-size: var(--text-sm);
+          line-height: var(--leading-relaxed);
+        }
+
+        .timeline__detail-learnings ul {
+          margin: 0;
+          padding-left: var(--space-5);
+          font-size: var(--text-sm);
+          line-height: var(--leading-relaxed);
+          display: flex;
+          flex-direction: column;
+          gap: 0.35rem;
+        }
+
+        .timeline__detail-subtitle {
+          margin: 0 0 var(--space-2);
+          font-size: var(--text-sm);
+          text-transform: uppercase;
+          letter-spacing: 0.08em;
+          color: var(--color-text-muted);
+        }
+
+        .timeline__detail-links ul {
+          margin: 0;
+          padding-left: var(--space-5);
+          display: flex;
+          flex-direction: column;
+          gap: 0.3rem;
+          font-size: var(--text-sm);
+        }
+
+        .timeline__detail-links a {
+          color: var(--color-accent);
+        }
+
+        .timeline__video {
+          margin-top: var(--space-2);
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-2);
+        }
+
+        .timeline__video-title {
+          margin: 0;
+          font-size: var(--text-sm);
+          text-transform: uppercase;
+          letter-spacing: 0.06em;
+          color: var(--color-text-muted);
+        }
+
+        .timeline__video-frame {
+          position: relative;
+          border-radius: var(--radius-lg);
+          overflow: hidden;
+          background: radial-gradient(
+              circle at top left,
+              rgba(56, 189, 248, 0.18),
+              transparent 55%
+            ),
+            rgba(15, 23, 42, 1);
+        }
+
+        .timeline__video-frame::before {
+          content: "";
+          display: block;
+          padding-bottom: 56.25%;
+        }
+
+        .timeline__video-frame iframe {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          border: 0;
+        }
+
+        .timeline__video-placeholder {
+          display: flex;
+          align-items: center;
+          gap: var(--space-3);
+          padding: var(--space-3);
+          border-radius: var(--radius-lg);
+          border: 1px dashed rgba(148, 163, 184, 0.6);
+          background: rgba(15, 23, 42, 0.9);
+        }
+
+        .timeline__video-icon {
+          width: 40px;
+          height: 40px;
+          border-radius: 999px;
+          background: radial-gradient(
+            circle at 30% 30%,
+            rgba(248, 250, 252, 0.3),
+            rgba(148, 163, 184, 0.9)
+          );
+          position: relative;
+        }
+
+        .timeline__video-icon::before {
+          content: "";
+          position: absolute;
+          inset: 11px 13px 11px 17px;
+          clip-path: polygon(0 0, 100% 50%, 0 100%);
+          background: rgba(15, 23, 42, 0.96);
+        }
+
+        .timeline__video-text {
+          display: flex;
+          flex-direction: column;
+          gap: 0.15rem;
+        }
+
+        .timeline__video-label {
+          margin: 0;
+          font-size: var(--text-sm);
+          font-weight: 500;
+        }
+
+        .timeline__video-hint {
+          margin: 0;
+          font-size: var(--text-xs);
+          color: var(--color-text-muted);
+        }
+
+        @media (max-width: 959px) {
+          .timeline__layout {
+            gap: var(--space-8);
+          }
+
+          .timeline__rows {
+            gap: var(--space-5);
+          }
+        }
+
+        @media (max-width: 767px) {
+          .timeline__layout {
+            grid-template-columns: minmax(0, 1fr);
+          }
+
+          .timeline__tracks {
+            inset: 0 var(--space-4) 0 0.5rem;
+          }
+
+          .timeline__rows {
+            gap: var(--space-4);
+          }
+
+          .timeline__detail {
+            position: static;
+          }
+
+          .timeline__detail-card {
+            padding: var(--space-4);
+          }
+        }
+
+        @media (min-width: 960px) {
+          .timeline__layout {
+            grid-template-columns: minmax(0, 3fr) minmax(0, 4fr);
+            align-items: flex-start;
+          }
+        }
+      `}</style>
+    </section>
+  );
+}
+
+
