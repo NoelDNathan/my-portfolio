@@ -222,25 +222,42 @@ export function Timeline() {
             </div>
 
             <div className="timeline__rows">
-              {sortedItems.map((item) => (
-                <TimelineRow
-                  key={item.id}
-                  item={item}
-                  isActive={item.id === activeId}
-                  isPinned={pinnedId === item.id}
-                  onAutoActivate={() => {
-                    if (!pinnedId) {
-                      setActiveId(item.id);
-                    }
-                  }}
-                  onClick={() => {
-                    const currentScrollY = typeof window !== "undefined" ? window.scrollY : 0;
-                    setPinnedId(item.id);
-                    setPinnedScrollY(currentScrollY);
-                    setActiveId(item.id);
-                  }}
-                />
-              ))}
+              {sortedItems.map((item, index) => {
+                const previous = index > 0 ? sortedItems[index - 1] : null;
+                const isNewYear = !previous || previous.yearStart !== item.yearStart;
+                const shouldShowYearSeparator = index > 0 && isNewYear;
+
+                return (
+                  <div key={item.id}>
+                    {shouldShowYearSeparator && (
+                      <div
+                        className="timeline__year-separator"
+                        role="separator"
+                        aria-label={String(item.yearStart)}
+                      >
+                        <span className="timeline__year-separator-label">{item.yearStart}</span>
+                      </div>
+                    )}
+                    <TimelineRow
+                      item={item}
+                      isActive={item.id === activeId}
+                      isPinned={pinnedId === item.id}
+                      onAutoActivate={() => {
+                        if (!pinnedId) {
+                          setActiveId(item.id);
+                        }
+                      }}
+                      onClick={() => {
+                        const currentScrollY =
+                          typeof window !== "undefined" ? window.scrollY : 0;
+                        setPinnedId(item.id);
+                        setPinnedScrollY(currentScrollY);
+                        setActiveId(item.id);
+                      }}
+                    />
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -425,6 +442,43 @@ export function Timeline() {
           display: flex;
           flex-direction: column;
           gap: var(--space-6);
+        }
+
+        .timeline__year-separator {
+          position: relative;
+          margin: var(--space-6) 0 var(--space-3);
+          padding: 0 var(--space-4) 0 var(--space-1);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: var(--text-xs);
+          text-transform: uppercase;
+          letter-spacing: 0.16em;
+          color: var(--color-text-muted);
+          opacity: 0.9;
+        }
+
+        .timeline__year-separator::before,
+        .timeline__year-separator::after {
+          content: "";
+          flex: 1;
+          border-bottom: 1px dashed rgba(148, 163, 184, 0.35);
+          margin-inline: var(--space-3);
+        }
+
+        .timeline__year-separator-label {
+          padding: 0.2rem 0.75rem;
+          border-radius: 999px;
+          border: 1px solid rgba(148, 163, 184, 0.7);
+          background: radial-gradient(
+              circle at top,
+              rgba(56, 189, 248, 0.2),
+              transparent 55%
+            ),
+            rgba(15, 23, 42, 0.96);
+          box-shadow:
+            0 0 0 1px rgba(15, 23, 42, 0.95),
+            0 12px 30px rgba(15, 23, 42, 0.85);
         }
 
         .timeline__row {
