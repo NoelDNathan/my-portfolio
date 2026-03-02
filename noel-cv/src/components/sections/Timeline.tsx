@@ -265,9 +265,9 @@ export function Timeline() {
     const wordCount = countWords(textParts.join(" "));
 
     const baseMs = 900; // scroll + UI settle time
-    const msPerWord = 240; // ~250 WPM reading pace
+    const msPerWord = 120; // ~250 WPM reading pace
     const minMs = 1800;
-    const maxMs = 20000;
+    const maxMs = 15000;
 
     const estimated = baseMs + wordCount * msPerWord;
     return Math.max(minMs, Math.min(estimated, maxMs));
@@ -535,22 +535,6 @@ export function Timeline() {
                     </span>
                   </header>
 
-                  <p className="timeline__detail-description">{activeItem.description}</p>
-
-                  {activeItem.learnings.length > 0 && (
-                    <section
-                      className="timeline__detail-learnings"
-                      aria-label="Skills and learnings"
-                    >
-                      <h4 className="timeline__detail-subtitle">Skills and learnings</h4>
-                      <ul>
-                        {activeItem.learnings.map((learning, index) => (
-                          <li key={index}>{learning}</li>
-                        ))}
-                      </ul>
-                    </section>
-                  )}
-
                   {activeItem.links && activeItem.links.length > 0 && (
                     <section className="timeline__detail-links" aria-label="Related links">
                       <h4 className="timeline__detail-subtitle">Links</h4>
@@ -567,6 +551,22 @@ export function Timeline() {
                   )}
 
                   <TimelineVideo video={activeItem.video} />
+
+                  <p className="timeline__detail-description">{activeItem.description}</p>
+
+                  {activeItem.learnings.length > 0 && (
+                    <section
+                      className="timeline__detail-learnings"
+                      aria-label="Skills and learnings"
+                    >
+                      <h4 className="timeline__detail-subtitle">Skills and learnings</h4>
+                      <ul>
+                        {activeItem.learnings.map((learning, index) => (
+                          <li key={index}>{learning}</li>
+                        ))}
+                      </ul>
+                    </section>
+                  )}
                 </motion.article>
               )}
             </AnimatePresence>
