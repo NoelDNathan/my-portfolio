@@ -244,9 +244,7 @@ export function SanchoDemo() {
         viewport={{ once: true }}
         transition={{ duration: 0.5, delay: 0.1 }}
       >
-        Character-level GPT inference in the browser (ONNX). Place{" "}
-        <code>sancho-mini.onnx</code> and <code>vocab.json</code> in{" "}
-        <code>public/sancho-demo/</code>.
+        A 3.26M-parameter, character-level nanoGPT model trained in PyTorch to write Spanish sonnets in the spirit of Cervantes, running directly in your browser (no API calls).
       </motion.p>
       <motion.div
         className="sancho-demo__panel"
@@ -256,7 +254,7 @@ export function SanchoDemo() {
         transition={{ duration: 0.5, delay: 0.15 }}
       >
         <label htmlFor="sancho-prompt" className="sancho-demo__label">
-          Optional starting text (leave empty for default)
+          Starting text  write <code>&lt;|startofpoem|&gt;</code> or your own beginning (in Spanish)…
         </label>
         <input
           id="sancho-prompt"
@@ -305,6 +303,10 @@ export function SanchoDemo() {
       </motion.div>
 
       <style>{`
+        #sancho-demo {
+          padding-top: 14px;
+          padding-bottom: 14px;
+        }
         .sancho-demo__subtitle {
           color: var(--color-text-muted);
           font-size: var(--text-sm);

@@ -6,6 +6,7 @@ import {
   type TimelineVideo as TimelineVideoMeta,
   type TimelineTopic,
 } from "../../data/timeline";
+import { SanchoDemo } from "./SanchoDemo";
 
 interface TimelineRowProps {
   item: TimelineItem;
@@ -676,6 +677,12 @@ export function Timeline() {
                   <TimelineVideo video={activeItem.video} />
 
                   <p className="timeline__detail-description">{activeItem.description}</p>
+
+                  {activeItem.id === "sancho-mini" && (
+                    <div className="timeline__embedded-demo">
+                      <SanchoDemo />
+                    </div>
+                  )}
 
                   {activeItem.learnings.length > 0 && (
                     <section
