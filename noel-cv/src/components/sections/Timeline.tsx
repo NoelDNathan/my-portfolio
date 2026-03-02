@@ -32,28 +32,35 @@ function TimelineRow({ item, isActive, isPinned, onAutoActivate, onClick }: Time
   const hasRange = item.yearEnd !== undefined && item.yearEnd !== item.yearStart;
 
   useEffect(() => {
-    if (!hasRange || !isActive) {
-      setRangeStyle(null);
-      return;
-    }
-
     if (typeof window === "undefined") {
       return;
     }
 
+    let rafId = 0;
+    const scheduleRangeStyle = (next: { height: number; offset: number } | null) => {
+      rafId = window.requestAnimationFrame(() => {
+        setRangeStyle(next);
+      });
+    };
+
+    if (!hasRange || !isActive) {
+      scheduleRangeStyle(null);
+
+      return () => window.cancelAnimationFrame(rafId);
+    }
+
     const trackEl = trackRef.current;
     if (!trackEl) {
-      return;
+      scheduleRangeStyle(null);
+      return () => window.cancelAnimationFrame(rafId);
     }
 
     const endYear = item.yearEnd ?? item.yearStart;
-    const endSeparator = document.querySelector<HTMLElement>(
-      `[data-timeline-year="${endYear}"]`,
-    );
+    const endSeparator = document.querySelector<HTMLElement>(`[data-timeline-year="${endYear}"]`);
 
     if (!endSeparator) {
-      setRangeStyle(null);
-      return;
+      scheduleRangeStyle(null);
+      return () => window.cancelAnimationFrame(rafId);
     }
 
     const trackRect = trackEl.getBoundingClientRect();
@@ -63,8 +70,8 @@ function TimelineRow({ item, isActive, isPinned, onAutoActivate, onClick }: Time
     const rawOffset = endRect.top - startCenterY;
 
     if (!Number.isFinite(rawOffset)) {
-      setRangeStyle(null);
-      return;
+      scheduleRangeStyle(null);
+      return () => window.cancelAnimationFrame(rafId);
     }
 
     const minOffset = 24;
@@ -72,7 +79,9 @@ function TimelineRow({ item, isActive, isPinned, onAutoActivate, onClick }: Time
     const offset = Math.max(minOffset, Math.min(rawOffset, maxOffset));
     const height = Math.max(12, offset - 10);
 
-    setRangeStyle({ height, offset });
+    scheduleRangeStyle({ height, offset });
+
+    return () => window.cancelAnimationFrame(rafId);
   }, [hasRange, isActive, item.yearEnd, item.yearStart]);
 
   const dotVariants = {
@@ -200,6 +209,114 @@ export function Timeline() {
   );
   const [pinnedId, setPinnedId] = useState<string | null>(null);
   const [pinnedScrollY, setPinnedScrollY] = useState<number | null>(null);
+  const shouldReduceMotion = useReducedMotion();
+  const itemContainerRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+
+  const [tourStatus, setTourStatus] = useState<"idle" | "playing" | "paused">("idle");
+  const [tourIndex, setTourIndex] = useState<number>(0);
+  const tourTimerRef = useRef<number | null>(null);
+  const tourStatusRef = useRef(tourStatus);
+
+  useEffect(() => {
+    tourStatusRef.current = tourStatus;
+  }, [tourStatus]);
+
+  const ensureItemIsVisible = (id: string) => {
+    const node = itemContainerRefs.current.get(id);
+    if (!node || typeof window === "undefined") {
+      return;
+    }
+
+    node.scrollIntoView({
+      behavior: shouldReduceMotion ? "auto" : "smooth",
+      block: "center",
+      inline: "nearest",
+    });
+
+    const row = node.querySelector<HTMLDivElement>(".timeline__row");
+    row?.focus({ preventScroll: true });
+  };
+
+  const clearTourTimer = () => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    if (tourTimerRef.current === null) {
+      return;
+    }
+    window.clearTimeout(tourTimerRef.current);
+    tourTimerRef.current = null;
+  };
+
+  const countWords = (value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return 0;
+    }
+    return trimmed.split(/\s+/).length;
+  };
+
+  const getTourStepDurationMs = (item: TimelineItem) => {
+    const textParts: string[] = [item.title, item.period, item.description, ...item.learnings];
+    if (item.links && item.links.length > 0) {
+      textParts.push(...item.links.map((link) => link.label));
+    }
+
+    const wordCount = countWords(textParts.join(" "));
+
+    const baseMs = 900; // scroll + UI settle time
+    const msPerWord = 240; // ~250 WPM reading pace
+    const minMs = 1800;
+    const maxMs = 20000;
+
+    const estimated = baseMs + wordCount * msPerWord;
+    return Math.max(minMs, Math.min(estimated, maxMs));
+  };
+
+  const stopTour = () => {
+    clearTourTimer();
+    setTourStatus("idle");
+  };
+
+  const runTourStep = (nextIndex: number) => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    if (sortedItems.length === 0) {
+      stopTour();
+      setTourIndex(0);
+      return;
+    }
+
+    if (nextIndex >= sortedItems.length) {
+      stopTour();
+      setTourIndex(Math.max(0, sortedItems.length - 1));
+      return;
+    }
+
+    const item = sortedItems[nextIndex];
+    setTourIndex(nextIndex);
+    setPinnedId(null);
+    setPinnedScrollY(null);
+    setActiveId(item.id);
+    ensureItemIsVisible(item.id);
+
+    clearTourTimer();
+    const stepDurationMs = getTourStepDurationMs(item);
+    tourTimerRef.current = window.setTimeout(() => {
+      if (tourStatusRef.current !== "playing") {
+        return;
+      }
+      runTourStep(nextIndex + 1);
+    }, stepDurationMs);
+  };
+
+  useEffect(() => {
+    return () => {
+      clearTourTimer();
+    };
+  }, []);
 
   useEffect(() => {
     if (!pinnedId) {
@@ -223,6 +340,8 @@ export function Timeline() {
   }, [pinnedId, pinnedScrollY]);
 
   const activeItem = sortedItems.find((item) => item.id === activeId) ?? sortedItems[0];
+  const tourProgressLabel =
+    sortedItems.length > 0 ? `${Math.min(tourIndex + 1, sortedItems.length)}/${sortedItems.length}` : "0/0";
 
   return (
     <section id="timeline" className="section timeline" aria-labelledby="timeline-title">
@@ -248,6 +367,74 @@ export function Timeline() {
           A vertical journey through my education, professional experience, projects, courses, and
           sport. Scroll to move through time – each milestone expands as it comes into focus.
         </motion.p>
+
+        <div className="timeline__tour" role="group" aria-label="Timeline guided tour controls">
+          <div className="timeline__tour-copy">
+            <p className="timeline__tour-title">Guided tour</p>
+            <p className="timeline__tour-description">
+              Press play to automatically walk through the milestones. You can pause anytime and keep scrolling normally.
+            </p>
+          </div>
+
+          <div className="timeline__tour-controls">
+            <button
+              type="button"
+              className={`timeline__tour-button timeline__tour-button--primary ${
+                tourStatus === "playing" ? "timeline__tour-button--is-active" : ""
+              }`}
+              onClick={() => {
+                if (sortedItems.length === 0) {
+                  return;
+                }
+
+                if (tourStatus === "playing") {
+                  clearTourTimer();
+                  setTourStatus("paused");
+                  return;
+                }
+
+                const activeIndex = activeId ? sortedItems.findIndex((item) => item.id === activeId) : -1;
+                setTourStatus("playing");
+                tourStatusRef.current = "playing";
+                runTourStep(activeIndex >= 0 ? activeIndex : 0);
+              }}
+              aria-pressed={tourStatus === "playing"}
+            >
+              <span className="timeline__tour-button-icon" aria-hidden="true">
+                {tourStatus === "playing" ? (
+                  <svg viewBox="0 0 24 24" width="20" height="20" focusable="false" aria-hidden="true">
+                    <path fill="currentColor" d="M7 5h4v14H7zM13 5h4v14h-4z" />
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" width="20" height="20" focusable="false" aria-hidden="true">
+                    <path fill="currentColor" d="M8 5v14l11-7z" />
+                  </svg>
+                )}
+              </span>
+              <span className="timeline__tour-button-label">{tourStatus === "playing" ? "Pause" : "Play"}</span>
+              <span className="timeline__tour-progress" aria-hidden="true">
+                {tourProgressLabel}
+              </span>
+            </button>
+
+            <button
+              type="button"
+              className="timeline__tour-button"
+              onClick={() => {
+                stopTour();
+                setTourIndex(0);
+              }}
+              disabled={tourStatus === "idle" && tourIndex === 0}
+            >
+              <span className="timeline__tour-button-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="18" height="18" focusable="false" aria-hidden="true">
+                  <path fill="currentColor" d="M7 7h10v10H7z" />
+                </svg>
+              </span>
+              <span className="timeline__tour-button-label">Stop</span>
+            </button>
+          </div>
+        </div>
 
         <div className="timeline__layout">
           <div className="timeline__events" aria-label="Timeline of experience">
@@ -287,23 +474,34 @@ export function Timeline() {
                         <span className="timeline__year-separator-label">{item.yearStart}</span>
                       </div>
                     )}
-                    <TimelineRow
-                      item={item}
-                      isActive={item.id === activeId}
-                      isPinned={pinnedId === item.id}
-                      onAutoActivate={() => {
-                        if (!pinnedId) {
-                          setActiveId(item.id);
+                    <div
+                      ref={(node) => {
+                        if (node) {
+                          itemContainerRefs.current.set(item.id, node);
+                          return;
                         }
+                        itemContainerRefs.current.delete(item.id);
                       }}
-                      onClick={() => {
-                        const currentScrollY =
-                          typeof window !== "undefined" ? window.scrollY : 0;
-                        setPinnedId(item.id);
-                        setPinnedScrollY(currentScrollY);
-                        setActiveId(item.id);
-                      }}
-                    />
+                      data-timeline-item={item.id}
+                    >
+                      <TimelineRow
+                        item={item}
+                        isActive={item.id === activeId}
+                        isPinned={pinnedId === item.id}
+                        onAutoActivate={() => {
+                          if (!pinnedId) {
+                            setActiveId(item.id);
+                          }
+                        }}
+                        onClick={() => {
+                          stopTour();
+                          const currentScrollY = typeof window !== "undefined" ? window.scrollY : 0;
+                          setPinnedId(item.id);
+                          setPinnedScrollY(currentScrollY);
+                          setActiveId(item.id);
+                        }}
+                      />
+                    </div>
                   </div>
                 );
               })}
@@ -387,6 +585,136 @@ export function Timeline() {
           max-width: 45rem;
           font-size: var(--text-base);
           color: var(--color-text-muted);
+        }
+
+        .timeline__tour {
+          display: grid;
+          gap: var(--space-4);
+          padding: clamp(1rem, 2vw, 1.35rem);
+          border-radius: var(--radius-xl);
+          border: 1px solid rgba(148, 163, 184, 0.35);
+          background: radial-gradient(
+              circle at 18% 22%,
+              rgba(94, 234, 212, 0.18),
+              transparent 55%
+            ),
+            radial-gradient(circle at 78% 8%, rgba(129, 140, 248, 0.16), transparent 42%),
+            rgba(12, 12, 18, 0.92);
+          box-shadow:
+            0 0 0 1px rgba(15, 23, 42, 0.75),
+            0 26px 80px rgba(0, 0, 0, 0.55);
+        }
+
+        .timeline__tour-copy {
+          display: flex;
+          flex-direction: column;
+          gap: 0.25rem;
+          max-width: 54rem;
+        }
+
+        .timeline__tour-title {
+          margin: 0;
+          font-size: var(--text-sm);
+          letter-spacing: 0.14em;
+          text-transform: uppercase;
+          color: rgba(248, 250, 252, 0.9);
+        }
+
+        .timeline__tour-description {
+          margin: 0;
+          font-size: var(--text-sm);
+          line-height: var(--leading-relaxed);
+          color: var(--color-text-muted);
+        }
+
+        .timeline__tour-controls {
+          display: flex;
+          flex-wrap: wrap;
+          gap: var(--space-3);
+          align-items: center;
+        }
+
+        .timeline__tour-button {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.55rem;
+          padding: 0.65rem 0.95rem;
+          border-radius: 999px;
+          border: 1px solid rgba(148, 163, 184, 0.45);
+          background: rgba(15, 23, 42, 0.75);
+          color: rgba(226, 232, 240, 0.92);
+          font-size: var(--text-sm);
+          letter-spacing: 0.01em;
+          transition:
+            transform 180ms ease,
+            border-color 180ms ease,
+            background-color 180ms ease,
+            box-shadow 180ms ease;
+          user-select: none;
+        }
+
+        .timeline__tour-button:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+          transform: none;
+        }
+
+        .timeline__tour-button:not(:disabled):hover {
+          transform: translateY(-1px);
+          border-color: rgba(94, 234, 212, 0.6);
+          box-shadow: 0 16px 45px rgba(0, 0, 0, 0.35);
+        }
+
+        .timeline__tour-button:focus-visible {
+          outline: 2px solid rgba(94, 234, 212, 0.9);
+          outline-offset: 3px;
+        }
+
+        .timeline__tour-button--primary {
+          border-color: rgba(94, 234, 212, 0.7);
+          background: radial-gradient(
+              circle at 20% 20%,
+              rgba(94, 234, 212, 0.25),
+              transparent 55%
+            ),
+            rgba(15, 23, 42, 0.75);
+        }
+
+        .timeline__tour-button--is-active {
+          box-shadow:
+            0 0 0 1px rgba(94, 234, 212, 0.35),
+            0 18px 65px rgba(94, 234, 212, 0.18);
+        }
+
+        .timeline__tour-button-icon {
+          width: 34px;
+          height: 34px;
+          border-radius: 999px;
+          display: inline-grid;
+          place-items: center;
+          background: radial-gradient(
+              circle at 30% 30%,
+              rgba(248, 250, 252, 0.28),
+              rgba(94, 234, 212, 0.18)
+            ),
+            rgba(15, 23, 42, 0.8);
+          border: 1px solid rgba(148, 163, 184, 0.38);
+        }
+
+        .timeline__tour-button-label {
+          font-weight: 600;
+        }
+
+        .timeline__tour-progress {
+          margin-left: 0.2rem;
+          padding: 0.15rem 0.55rem;
+          border-radius: 999px;
+          font-size: var(--text-xs);
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: rgba(226, 232, 240, 0.8);
+          border: 1px solid rgba(148, 163, 184, 0.22);
+          background: rgba(2, 6, 23, 0.55);
         }
 
         .timeline__layout {
@@ -672,6 +1000,10 @@ export function Timeline() {
           opacity: 1;
         }
 
+        .timeline__row--active[aria-current="step"] {
+          scroll-margin-block: 120px;
+        }
+
         .timeline__row:focus-visible {
           outline: 2px solid var(--color-accent);
           outline-offset: 2px;
@@ -890,6 +1222,10 @@ export function Timeline() {
         @media (max-width: 767px) {
           .timeline__layout {
             grid-template-columns: minmax(0, 1fr);
+          }
+
+          .timeline__tour {
+            gap: var(--space-3);
           }
 
           .timeline__tracks {
