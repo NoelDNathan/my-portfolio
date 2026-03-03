@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useInView, useReducedMotion } from "framer-motion";
 import {
   timelineItems,
@@ -6,6 +6,7 @@ import {
   type TimelineVideo as TimelineVideoMeta,
   type TimelineTopic,
 } from "../../data/timeline";
+import { skillsGraph, type SkillNode as SkillGraphNode } from "../../data/skillsGraph";
 import { SanchoDemo } from "./SanchoDemo";
 import { SkillGraph } from "../skills/SkillGraph";
 
@@ -258,13 +259,35 @@ export function Timeline() {
   const tourTimerRef = useRef<number | null>(null);
   const tourStatusRef = useRef(tourStatus);
 
-  type SkillFilter = {
+  type SkillFilterState = {
     id: string;
     name: string;
     relatedItems?: string[];
   };
 
-  const [selectedSkillFilter, setSelectedSkillFilter] = useState<SkillFilter | null>(null);
+  const [selectedSkillFilter, setSelectedSkillFilter] = useState<SkillFilterState | null>(null);
+
+  const skillChildrenByParentId = useMemo(() => {
+    const map = new Map<string | null, SkillGraphNode[]>();
+    for (const skill of skillsGraph) {
+      const key = skill.parentId ?? null;
+      const existing = map.get(key);
+      if (existing) {
+        existing.push(skill);
+      } else {
+        map.set(key, [skill]);
+      }
+    }
+    return map;
+  }, []);
+
+  const skillById = useMemo(() => {
+    const map = new Map<string, SkillGraphNode>();
+    for (const skill of skillsGraph) {
+      map.set(skill.id, skill);
+    }
+    return map;
+  }, []);
 
   useEffect(() => {
     tourStatusRef.current = tourStatus;
@@ -382,12 +405,68 @@ export function Timeline() {
     setActiveId(nextVisibleItems[0]?.id ?? null);
   };
 
-  const applySkillFilter = (nextSkill: SkillFilter | null) => {
+  const getSkillSubtreeRelatedItems = useCallback(
+    (rootId: string): string[] => {
+      const visitedSkillIds = new Set<string>();
+      const collectedIds = new Set<string>();
+      const stack: string[] = [rootId];
+
+      while (stack.length > 0) {
+        const currentId = stack.pop() as string;
+        if (visitedSkillIds.has(currentId)) {
+          continue;
+        }
+        visitedSkillIds.add(currentId);
+
+        const skill = skillById.get(currentId);
+        if (!skill) {
+          continue;
+        }
+
+        if (skill.relatedItems) {
+          for (const timelineId of skill.relatedItems) {
+            collectedIds.add(timelineId);
+          }
+        }
+
+        const children = skillChildrenByParentId.get(currentId) ?? [];
+        for (const child of children) {
+          stack.push(child.id);
+        }
+      }
+
+      return Array.from(collectedIds);
+    },
+    [skillById, skillChildrenByParentId],
+  );
+
+  const applySkillFilter = (nextSkill: SkillGraphNode | null) => {
     stopTour();
     setTourIndex(0);
     setPinnedId(null);
     setPinnedScrollY(null);
-    setSelectedSkillFilter(nextSkill);
+
+    if (!nextSkill) {
+      setSelectedSkillFilter(null);
+
+      const baseItems =
+        selectedTopics.length === 0
+          ? sortedItems
+          : sortedItems.filter((item) => selectedTopicsSet.has(item.topic));
+
+      setActiveId(baseItems[0]?.id ?? null);
+      return;
+    }
+
+    const aggregatedRelatedItems = getSkillSubtreeRelatedItems(nextSkill.id);
+
+    const nextFilterState: SkillFilterState = {
+      id: nextSkill.id,
+      name: nextSkill.name,
+      relatedItems: aggregatedRelatedItems,
+    };
+
+    setSelectedSkillFilter(nextFilterState);
 
     const baseItems =
       selectedTopics.length === 0
@@ -395,8 +474,8 @@ export function Timeline() {
         : sortedItems.filter((item) => selectedTopicsSet.has(item.topic));
 
     const visibleWithSkill =
-      nextSkill && nextSkill.relatedItems && nextSkill.relatedItems.length > 0
-        ? baseItems.filter((item) => nextSkill.relatedItems?.includes(item.id))
+      aggregatedRelatedItems.length > 0
+        ? baseItems.filter((item) => aggregatedRelatedItems.includes(item.id))
         : baseItems;
 
     if (visibleWithSkill.length > 0) {
