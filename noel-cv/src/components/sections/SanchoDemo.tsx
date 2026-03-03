@@ -2,8 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 
 const ONNX_SCRIPT_URL = "https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js";
-const MODEL_URL = "/sancho-demo/sancho-mini.onnx";
-const VOCAB_URL = "/sancho-demo/vocab.json";
+const MODEL_URL = "sancho-demo/sancho-mini.onnx";
+const VOCAB_URL = "sancho-demo/vocab.json";
 const BLOCK_SIZE = 256;
 const TEMPERATURE = 0.4;
 const TOP_K = 50;
