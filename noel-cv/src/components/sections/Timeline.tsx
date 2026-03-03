@@ -258,17 +258,32 @@ export function Timeline() {
   const tourTimerRef = useRef<number | null>(null);
   const tourStatusRef = useRef(tourStatus);
 
+  type SkillFilter = {
+    id: string;
+    name: string;
+    relatedItems?: string[];
+  };
+
+  const [selectedSkillFilter, setSelectedSkillFilter] = useState<SkillFilter | null>(null);
+
   useEffect(() => {
     tourStatusRef.current = tourStatus;
   }, [tourStatus]);
 
   const selectedTopicsSet = useMemo(() => new Set(selectedTopics), [selectedTopics]);
   const visibleItems = useMemo(() => {
-    if (selectedTopics.length === 0) {
-      return sortedItems;
+    let items =
+      selectedTopics.length === 0
+        ? sortedItems
+        : sortedItems.filter((item) => selectedTopicsSet.has(item.topic));
+
+    if (selectedSkillFilter && selectedSkillFilter.relatedItems && selectedSkillFilter.relatedItems.length > 0) {
+      const allowedIds = new Set(selectedSkillFilter.relatedItems);
+      items = items.filter((item) => allowedIds.has(item.id));
     }
-    return sortedItems.filter((item) => selectedTopicsSet.has(item.topic));
-  }, [sortedItems, selectedTopics, selectedTopicsSet]);
+
+    return items;
+  }, [sortedItems, selectedTopics, selectedTopicsSet, selectedSkillFilter]);
 
   const ensureItemIsVisible = (id: string) => {
     const node = itemContainerRefs.current.get(id);
@@ -365,6 +380,30 @@ export function Timeline() {
     }
 
     setActiveId(nextVisibleItems[0]?.id ?? null);
+  };
+
+  const applySkillFilter = (nextSkill: SkillFilter | null) => {
+    stopTour();
+    setTourIndex(0);
+    setPinnedId(null);
+    setPinnedScrollY(null);
+    setSelectedSkillFilter(nextSkill);
+
+    const baseItems =
+      selectedTopics.length === 0
+        ? sortedItems
+        : sortedItems.filter((item) => selectedTopicsSet.has(item.topic));
+
+    const visibleWithSkill =
+      nextSkill && nextSkill.relatedItems && nextSkill.relatedItems.length > 0
+        ? baseItems.filter((item) => nextSkill.relatedItems?.includes(item.id))
+        : baseItems;
+
+    if (visibleWithSkill.length > 0) {
+      setActiveId(visibleWithSkill[0].id);
+    } else {
+      setActiveId(baseItems[0]?.id ?? null);
+    }
   };
 
   const runTourStep = (nextIndex: number) => {
@@ -470,6 +509,18 @@ export function Timeline() {
               <p className="timeline__tour-description">
                 Press play to automatically walk through the milestones. You can pause anytime and keep scrolling normally.
               </p>
+              {selectedSkillFilter && (
+                <p className="timeline__tour-skill-filter">
+                  Filtering by skill: <span>{selectedSkillFilter.name}</span>
+                  <button
+                    type="button"
+                    className="timeline__tour-skill-filter-clear"
+                    onClick={() => applySkillFilter(null)}
+                  >
+                    Clear
+                  </button>
+                </p>
+              )}
             </div>
 
             <div className="timeline__tour-controls">
@@ -558,7 +609,10 @@ export function Timeline() {
           </div>
 
           <div className="timeline__tour-graph" aria-label="Skills graph guided by experience">
-            <SkillGraph />
+            <SkillGraph
+              selectedSkillId={selectedSkillFilter?.id ?? null}
+              onSkillSelect={applySkillFilter}
+            />
           </div>
         </div>
 
@@ -776,6 +830,34 @@ export function Timeline() {
           flex-direction: column;
           gap: 0.25rem;
           max-width: 54rem;
+        }
+
+        .timeline__tour-skill-filter {
+          margin: 0.1rem 0 0;
+          font-size: var(--text-xs);
+          color: rgba(226, 232, 240, 0.8);
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.25rem;
+          align-items: center;
+        }
+
+        .timeline__tour-skill-filter span {
+          font-weight: 600;
+          color: rgba(94, 234, 212, 0.95);
+        }
+
+        .timeline__tour-skill-filter-clear {
+          appearance: none;
+          border: 0;
+          padding: 0.1rem 0.4rem;
+          border-radius: 999px;
+          font-size: 0.7rem;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+          background: rgba(15, 23, 42, 0.8);
+          color: rgba(148, 163, 184, 0.9);
+          cursor: pointer;
         }
 
         .timeline__tour-title {

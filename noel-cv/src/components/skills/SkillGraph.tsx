@@ -6,9 +6,11 @@ type SkillGraphNode = SkillNode;
 
 interface SkillGraphProps {
   className?: string;
+  selectedSkillId?: string | null;
+  onSkillSelect?: (skill: SkillGraphNode | null) => void;
 }
 
-export function SkillGraph({ className }: SkillGraphProps) {
+export function SkillGraph({ className, selectedSkillId, onSkillSelect }: SkillGraphProps) {
   const [currentNodeId, setCurrentNodeId] = useState<string | null>(null);
 
   const shouldReduceMotion = useReducedMotion();
@@ -165,6 +167,7 @@ export function SkillGraph({ className }: SkillGraphProps) {
                       : "skillgraph__node--undefined";
 
               const isNavigable = canGoDeeper(node.id);
+              const isSelected = selectedSkillId === node.id;
 
               return (
                 <motion.button
@@ -172,16 +175,30 @@ export function SkillGraph({ className }: SkillGraphProps) {
                   type="button"
                   className={`skillgraph__node ${levelClass} ${
                     isNavigable ? "skillgraph__node--navigable" : ""
+                  } ${
+                    isSelected ? "skillgraph__node--selected" : ""
                   }`}
                   layout
                   whileHover={shouldReduceMotion ? undefined : { scale: 1.03, translateY: -2 }}
                   whileTap={shouldReduceMotion ? undefined : { scale: 0.97 }}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    if (!onSkillSelect) {
+                      return;
+                    }
+                    if (isSelected) {
+                      onSkillSelect(null);
+                      return;
+                    }
+                    onSkillSelect(node);
+                  }}
                   onDoubleClick={(event) => {
                     event.stopPropagation();
                     if (isNavigable) {
                       setCurrentNodeId(node.id);
                     }
                   }}
+                  aria-pressed={isSelected ? true : undefined}
                 >
                   {node.level === "basic" && (
                     <svg
@@ -505,6 +522,12 @@ export function SkillGraph({ className }: SkillGraphProps) {
           border: none;
           background: transparent;
           box-shadow: none;
+        }
+
+        .skillgraph__node--selected {
+          box-shadow:
+            0 0 0 1px rgba(94, 234, 212, 0.85),
+            0 20px 60px rgba(94, 234, 212, 0.3);
         }
 
         .skillgraph__node-shape {
