@@ -1,0 +1,12 @@
+{
+  "name": "portfolio-chat",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "chat-server": "node server/xai-chat-server.mjs"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "openai": "^4.73.0"
+  }
+}

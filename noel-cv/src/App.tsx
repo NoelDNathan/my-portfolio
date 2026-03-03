@@ -8,6 +8,7 @@ import { Timeline } from "./components/sections/Timeline";
 import { Experience } from "./components/sections/Experience";
 import { Education } from "./components/sections/Education";
 import { SanchoDemo } from "./components/sections/SanchoDemo";
+import { ChatHelpWidget } from "./components/ui/ChatHelpWidget";
 import { Contact } from "./components/sections/Contact";
 
 function App() {
@@ -29,6 +30,7 @@ function App() {
         <Contact />
       </main>
       <Footer />
+      <ChatHelpWidget />
     </>
   );
 }
