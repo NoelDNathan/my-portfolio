@@ -11,8 +11,14 @@ interface ChatMessage {
   content: string;
 }
 
+const QUICK_QUESTIONS = [
+  "What are your main skills?",
+  "Tell me about your experience.",
+  "Which projects should I look at first?",
+];
+
 export function ChatHelpWidget() {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(true);
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 1,
@@ -22,8 +28,10 @@ export function ChatHelpWidget() {
   ]);
   const [inputValue, setInputValue] = useState("");
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const autoCloseTimeoutRef = useRef<number | null>(null);
   const [idCounter, setIdCounter] = useState(2);
   const [isLoading, setIsLoading] = useState(false);
+  const hasUserMessages = messages.some((message) => message.role === "user");
 
   useEffect(() => {
     if (!isOpen) return;
@@ -33,23 +41,24 @@ export function ChatHelpWidget() {
   }, [messages, isOpen]);
 
   const handleToggle = () => {
+    if (autoCloseTimeoutRef.current !== null) {
+      clearTimeout(autoCloseTimeoutRef.current);
+      autoCloseTimeoutRef.current = null;
+    }
     setIsOpen((prev) => !prev);
   };
 
-  const handleSubmit = async (event: FormEvent) => {
-    event.preventDefault();
-    const trimmed = inputValue.trim();
-    if (!trimmed || isLoading) return;
+  const sendMessage = async (content: string) => {
+    if (!content.trim() || isLoading) return;
 
     const userMessage: ChatMessage = {
       id: idCounter,
       role: "user",
-      content: trimmed,
+      content,
     };
 
     setMessages((prev) => [...prev, userMessage]);
     setIdCounter((prev) => prev + 1);
-    setInputValue("");
     setIsLoading(true);
 
     try {
@@ -97,6 +106,14 @@ export function ChatHelpWidget() {
     }
   };
 
+  const handleSubmit = async (event: FormEvent) => {
+    event.preventDefault();
+    const trimmed = inputValue.trim();
+    if (!trimmed) return;
+    setInputValue("");
+    await sendMessage(trimmed);
+  };
+
   return (
     <>
       <div className="chat-help-widget" aria-live="polite">
@@ -132,6 +149,21 @@ export function ChatHelpWidget() {
                 ))}
                 <div ref={messagesEndRef} />
               </div>
+              {!hasUserMessages && (
+                <div className="chat-help-widget__quick-questions" aria-label="Quick questions">
+                  {QUICK_QUESTIONS.map((question) => (
+                    <button
+                      key={question}
+                      type="button"
+                      className="chat-help-widget__quick-question"
+                      onClick={() => void sendMessage(question)}
+                      disabled={isLoading}
+                    >
+                      {question}
+                    </button>
+                  ))}
+                </div>
+              )}
               <form className="chat-help-widget__input-row" onSubmit={handleSubmit}>
                 <input
                   type="text"
@@ -264,6 +296,42 @@ export function ChatHelpWidget() {
           flex-direction: column;
           gap: 0.5rem;
           scrollbar-width: thin;
+        }
+
+        .chat-help-widget__quick-questions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.4rem;
+          padding: 0 0.8rem 0.4rem;
+          justify-content: flex-end;
+          width: 100%;
+        }
+
+        .chat-help-widget__quick-question {
+          border-radius: 999px;
+          border: 1px solid var(--color-border-subtle);
+          background: rgba(15, 23, 42, 0.9);
+          color: var(--color-text);
+          font-size: 0.7rem;
+          padding: 0.25rem 0.6rem;
+          cursor: pointer;
+          transition:
+            background 120ms ease,
+            border-color 120ms ease,
+            color 120ms ease,
+            transform 100ms ease;
+        }
+
+        .chat-help-widget__quick-question:hover:enabled {
+          background: rgba(15, 23, 42, 1);
+          border-color: var(--color-accent);
+          color: var(--color-accent-hover);
+          transform: translateY(-1px);
+        }
+
+        .chat-help-widget__quick-question:disabled {
+          opacity: 0.6;
+          cursor: default;
         }
 
         .chat-help-widget__messages::-webkit-scrollbar {
