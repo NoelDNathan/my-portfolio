@@ -7,6 +7,7 @@ import {
   type TimelineTopic,
 } from "../../data/timeline";
 import { SanchoDemo } from "./SanchoDemo";
+import { SkillGraph } from "../skills/SkillGraph";
 
 interface TimelineRowProps {
   item: TimelineItem;
@@ -462,96 +463,102 @@ export function Timeline() {
           sport. Scroll to move through time – each milestone expands as it comes into focus.
         </motion.p>
 
-        <div className="timeline__tour" role="group" aria-label="Timeline guided tour controls">
-          <div className="timeline__tour-copy">
-            <p className="timeline__tour-title">Guided tour</p>
-            <p className="timeline__tour-description">
-              Press play to automatically walk through the milestones. You can pause anytime and keep scrolling normally.
-            </p>
-          </div>
-
-          <div className="timeline__tour-controls">
-            <button
-              type="button"
-              className={`timeline__tour-button timeline__tour-button--primary ${
-                tourStatus === "playing" ? "timeline__tour-button--is-active" : ""
-              }`}
-              onClick={() => {
-                if (visibleItems.length === 0) {
-                  return;
-                }
-
-                if (tourStatus === "playing") {
-                  clearTourTimer();
-                  setTourStatus("paused");
-                  return;
-                }
-
-                const activeIndex = activeId ? visibleItems.findIndex((item) => item.id === activeId) : -1;
-                setTourStatus("playing");
-                tourStatusRef.current = "playing";
-                runTourStep(activeIndex >= 0 ? activeIndex : 0);
-              }}
-              aria-pressed={tourStatus === "playing"}
-            >
-              <span className="timeline__tour-button-icon" aria-hidden="true">
-                {tourStatus === "playing" ? (
-                  <svg viewBox="0 0 24 24" width="20" height="20" focusable="false" aria-hidden="true">
-                    <path fill="currentColor" d="M7 5h4v14H7zM13 5h4v14h-4z" />
-                  </svg>
-                ) : (
-                  <svg viewBox="0 0 24 24" width="20" height="20" focusable="false" aria-hidden="true">
-                    <path fill="currentColor" d="M8 5v14l11-7z" />
-                  </svg>
-                )}
-              </span>
-              <span className="timeline__tour-button-label">{tourStatus === "playing" ? "Pause" : "Play"}</span>
-              <span className="timeline__tour-progress" aria-hidden="true">
-                {tourProgressLabel}
-              </span>
-            </button>
-
-            <button
-              type="button"
-              className="timeline__tour-button"
-              onClick={() => {
-                stopTour();
-                setTourIndex(0);
-              }}
-              disabled={tourStatus === "idle" && tourIndex === 0}
-            >
-              <span className="timeline__tour-button-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" width="18" height="18" focusable="false" aria-hidden="true">
-                  <path fill="currentColor" d="M7 7h10v10H7z" />
-                </svg>
-              </span>
-              <span className="timeline__tour-button-label">Stop</span>
-            </button>
-          </div>
-
-          <div className="timeline__filters" role="group" aria-label="Filter timeline by track">
-            <p className="timeline__filters-label">Filter by track</p>
-            <div className="timeline__filter-chips">
-              {topicFilters.map((filter) => {
-                const isActive =
-                  filter.id === "all" ? selectedTopics.length === 0 : selectedTopicsSet.has(filter.id);
-                const isTopicFilter = filter.id !== "all";
-
-                return (
-                  <button
-                    key={filter.id}
-                    type="button"
-                    className={`timeline__chip ${isActive ? "timeline__chip--active" : ""} ${
-                      isTopicFilter ? `timeline__chip--${filter.id}` : "timeline__chip--all"
-                    }`}
-                    onClick={() => applyTopicFilter(filter.id)}
-                    aria-pressed={isActive}
-                  >
-                    {filter.label}
-                  </button>
-                );
-              })}
+        <div className="timeline__tour" role="group" aria-label="Timeline guided tour controls and skills graph">
+          <div className="timeline__tour-main">
+            <div className="timeline__tour-copy">
+              <p className="timeline__tour-title">Guided tour</p>
+              <p className="timeline__tour-description">
+                Press play to automatically walk through the milestones. You can pause anytime and keep scrolling normally.
+              </p>
             </div>
+
+            <div className="timeline__tour-controls">
+              <button
+                type="button"
+                className={`timeline__tour-button timeline__tour-button--primary ${
+                  tourStatus === "playing" ? "timeline__tour-button--is-active" : ""
+                }`}
+                onClick={() => {
+                  if (visibleItems.length === 0) {
+                    return;
+                  }
+
+                  if (tourStatus === "playing") {
+                    clearTourTimer();
+                    setTourStatus("paused");
+                    return;
+                  }
+
+                  const activeIndex = activeId ? visibleItems.findIndex((item) => item.id === activeId) : -1;
+                  setTourStatus("playing");
+                  tourStatusRef.current = "playing";
+                  runTourStep(activeIndex >= 0 ? activeIndex : 0);
+                }}
+                aria-pressed={tourStatus === "playing"}
+              >
+                <span className="timeline__tour-button-icon" aria-hidden="true">
+                  {tourStatus === "playing" ? (
+                    <svg viewBox="0 0 24 24" width="20" height="20" focusable="false" aria-hidden="true">
+                      <path fill="currentColor" d="M7 5h4v14H7zM13 5h4v14h-4z" />
+                    </svg>
+                  ) : (
+                    <svg viewBox="0 0 24 24" width="20" height="20" focusable="false" aria-hidden="true">
+                      <path fill="currentColor" d="M8 5v14l11-7z" />
+                    </svg>
+                  )}
+                </span>
+                <span className="timeline__tour-button-label">{tourStatus === "playing" ? "Pause" : "Play"}</span>
+                <span className="timeline__tour-progress" aria-hidden="true">
+                  {tourProgressLabel}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                className="timeline__tour-button"
+                onClick={() => {
+                  stopTour();
+                  setTourIndex(0);
+                }}
+                disabled={tourStatus === "idle" && tourIndex === 0}
+              >
+                <span className="timeline__tour-button-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="18" height="18" focusable="false" aria-hidden="true">
+                    <path fill="currentColor" d="M7 7h10v10H7z" />
+                  </svg>
+                </span>
+                <span className="timeline__tour-button-label">Stop</span>
+              </button>
+            </div>
+
+            <div className="timeline__filters" role="group" aria-label="Filter timeline by track">
+              <p className="timeline__filters-label">Filter by track</p>
+              <div className="timeline__filter-chips">
+                {topicFilters.map((filter) => {
+                  const isActive =
+                    filter.id === "all" ? selectedTopics.length === 0 : selectedTopicsSet.has(filter.id);
+                  const isTopicFilter = filter.id !== "all";
+
+                  return (
+                    <button
+                      key={filter.id}
+                      type="button"
+                      className={`timeline__chip ${isActive ? "timeline__chip--active" : ""} ${
+                        isTopicFilter ? `timeline__chip--${filter.id}` : "timeline__chip--all"
+                      }`}
+                      onClick={() => applyTopicFilter(filter.id)}
+                      aria-pressed={isActive}
+                    >
+                      {filter.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          <div className="timeline__tour-graph" aria-label="Skills graph guided by experience">
+            <SkillGraph />
           </div>
         </div>
 
@@ -735,6 +742,7 @@ export function Timeline() {
 
         .timeline__tour {
           display: grid;
+          grid-template-columns: minmax(0, 3fr) minmax(0, 4fr);
           gap: var(--space-4);
           padding: clamp(1rem, 2vw, 1.35rem);
           margin-bottom: var(--space-10);
@@ -750,6 +758,17 @@ export function Timeline() {
           box-shadow:
             0 0 0 1px rgba(15, 23, 42, 0.75),
             0 26px 80px rgba(0, 0, 0, 0.55);
+          align-items: stretch;
+        }
+
+        .timeline__tour-main {
+          display: flex;
+          flex-direction: column;
+          gap: var(--space-4);
+        }
+
+        .timeline__tour-graph {
+          min-height: 260px;
         }
 
         .timeline__tour-copy {
@@ -1495,6 +1514,10 @@ export function Timeline() {
         }
 
         @media (max-width: 959px) {
+          .timeline__tour {
+            grid-template-columns: minmax(0, 1fr);
+          }
+
           .timeline__layout {
             gap: var(--space-8);
           }
