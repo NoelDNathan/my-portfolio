@@ -12,6 +12,7 @@ interface SkillGraphProps {
 
 export function SkillGraph({ className, selectedSkillId, onSkillSelect }: SkillGraphProps) {
   const [currentNodeId, setCurrentNodeId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const shouldReduceMotion = useReducedMotion();
 
@@ -108,6 +109,16 @@ export function SkillGraph({ className, selectedSkillId, onSkillSelect }: SkillG
 
   const graphKey = currentNodeId ?? "root";
 
+  const normalizedSearchQuery = searchQuery.trim().toLowerCase();
+  const searchResults = useMemo(() => {
+    if (normalizedSearchQuery.length < 2) {
+      return [] as SkillGraphNode[];
+    }
+    return skillsGraph
+      .filter((skill) => skill.name.toLowerCase().includes(normalizedSearchQuery))
+      .slice(0, 8);
+  }, [normalizedSearchQuery]);
+
   return (
     <section className={`skillgraph ${className ?? ""}`} aria-label="Hierarchical skills graph">
       <div className="skillgraph__header">
@@ -117,6 +128,36 @@ export function SkillGraph({ className, selectedSkillId, onSkillSelect }: SkillG
           Double-click a skill to zoom in. Double-click on the empty space to return to the previous
           level.
         </p>
+        <div className="skillgraph__search">
+          <input
+            type="search"
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Search skills…"
+            className="skillgraph__search-input"
+          />
+          {searchResults.length > 0 && (
+            <ul className="skillgraph__search-results">
+              {searchResults.map((skill) => (
+                <li key={skill.id}>
+                  <button
+                    type="button"
+                    className="skillgraph__search-result-button"
+                    onClick={() => {
+                      setSearchQuery("");
+                      setCurrentNodeId(skill.parentId ?? null);
+                      if (onSkillSelect) {
+                        onSkillSelect(skill);
+                      }
+                    }}
+                  >
+                    <span className="skillgraph__search-result-name">{skill.name}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
         <nav className="skillgraph__breadcrumb" aria-label="Skill graph level navigation">
           {breadcrumbItems.map((crumb, index) => {
             const isLast = index === breadcrumbItems.length - 1;
@@ -188,6 +229,7 @@ export function SkillGraph({ className, selectedSkillId, onSkillSelect }: SkillG
                       onSkillSelect(null);
                       return;
                     }
+                    setSearchQuery("");
                     onSkillSelect(node);
                   }}
                   onDoubleClick={(event) => {
@@ -346,6 +388,72 @@ export function SkillGraph({ className, selectedSkillId, onSkillSelect }: SkillG
           margin: 0;
           font-size: var(--text-xs);
           color: var(--color-text-muted);
+        }
+
+        .skillgraph__search {
+          position: relative;
+          margin-top: 0.35rem;
+          max-width: 260px;
+        }
+
+        .skillgraph__search-input {
+          width: 100%;
+          padding: 0.35rem 0.6rem;
+          border-radius: 999px;
+          border: 1px solid rgba(148, 163, 184, 0.5);
+          background: rgba(15, 23, 42, 0.96);
+          color: rgba(226, 232, 240, 0.95);
+          font-size: var(--text-xs);
+        }
+
+        .skillgraph__search-input:focus {
+          outline: none;
+          border-color: rgba(94, 234, 212, 0.9);
+        }
+
+        .skillgraph__search-input::placeholder {
+          color: rgba(148, 163, 184, 0.8);
+        }
+
+        .skillgraph__search-results {
+          position: absolute;
+          z-index: 10;
+          margin: 0.4rem 0 0;
+          padding: 0.35rem 0;
+          list-style: none;
+          inset-inline: 0;
+          border-radius: 0.75rem;
+          border: 1px solid rgba(94, 234, 212, 0.95);
+          background: rgba(15, 23, 42, 0.98);
+          box-shadow: 0 18px 55px rgba(15, 23, 42, 0.9);
+          max-height: 220px;
+          overflow-y: auto;
+        }
+
+        .skillgraph__search-results li + li {
+          margin-top: 0.1rem;
+        }
+
+        .skillgraph__search-result-button {
+          width: 100%;
+          padding: 0.25rem 0.75rem;
+          border: 0;
+          background: transparent;
+          color: rgba(226, 232, 240, 0.95);
+          font-size: var(--text-xs);
+          text-align: left;
+          cursor: pointer;
+        }
+
+        .skillgraph__search-result-button:hover {
+          background: rgba(30, 64, 175, 0.35);
+        }
+
+        .skillgraph__search-result-name {
+          white-space: nowrap;
+          text-overflow: ellipsis;
+          overflow: hidden;
+          display: block;
         }
 
         .skillgraph__breadcrumb {
