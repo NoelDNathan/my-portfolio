@@ -567,7 +567,7 @@ export function Timeline() {
           viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.5 }}
         >
-          Journey Timeline
+          Learning Journey
         </motion.h2>
 
         <motion.p
@@ -578,7 +578,7 @@ export function Timeline() {
           transition={{ duration: 0.5, delay: 0.1 }}
         >
           A vertical journey through my education, professional experience, projects, courses, and
-          sport. Scroll to move through time – each milestone expands as it comes into focus.
+          sport. Scroll to move through time: each milestone expands as it comes into focus.
         </motion.p>
 
         <div className="timeline__tour" role="group" aria-label="Timeline guided tour controls and skills graph">
@@ -687,7 +687,7 @@ export function Timeline() {
             </div>
           </div>
 
-          <div className="timeline__tour-graph" aria-label="Skills graph guided by experience">
+          <div className="timeline__tour-graph" aria-label="Skills graph guided by experience" id="skills-graph">
             <SkillGraph
               selectedSkillId={selectedSkillFilter?.id ?? null}
               onSkillSelect={applySkillFilter}
@@ -695,7 +695,7 @@ export function Timeline() {
           </div>
         </div>
 
-        <div className="timeline__layout">
+        <div className="timeline__layout" id="timeline-layout">
           <div className="timeline__events" aria-label="Timeline of experience">
             <div
               className="timeline__tracks"
@@ -861,16 +861,21 @@ export function Timeline() {
       </div>
 
       <style>{`
+        #timeline-title {
+          margin-bottom: 0;
+        }
+
         .timeline__inner {
           display: flex;
           flex-direction: column;
-          gap: var(--space-6);
+          gap: var(--space-2);
         }
 
         .timeline__intro {
+          margin-top: 0px;
           max-width: 45rem;
           font-size: var(--text-base);
-          color: var(--color-text-muted);
+          color: rgba(255, 255, 255, 0.85);
         }
 
         .timeline__tour {

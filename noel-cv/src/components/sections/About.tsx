@@ -16,49 +16,17 @@ export function About() {
       </motion.h2>
       <div className="about__grid">
         <motion.div
-          className="about__narrative"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-50px" }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-        >
-          <p>{profile.careerNarrative}</p>
-        </motion.div>
-        <motion.div
-          className="about__details"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-50px" }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-        >
-          <div className="about__block">
-            <h3>Specialization</h3>
-            <ul>
-              {profile.specialization.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-          </div>
-          <div className="about__block">
-            <h3>Professional Focus</h3>
-            <ul>
-              {profile.professionalFocus.map((item) => (
-                <li key={item}>{item}</li>
-              ))}
-            </ul>
-          </div>
-          <div className="about__block">
-            <h3>Languages</h3>
-            <ul>
-              {profile.languages.map((lang) => (
-                <li key={lang.name}>
-                  {lang.name} ({lang.level})
-                </li>
-              ))}
-            </ul>
-          </div>
-        </motion.div>
-      </div>
+        className="about__narrative"
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, margin: "-50px" }}
+        transition={{ duration: 0.5, delay: 0.1 }}
+      >
+        {profile.careerNarrative.split("\n\n").map((paragraph, index) => (
+          <p key={index}>{paragraph}</p>
+        ))}
+      </motion.div>
+    </div>
 
       <style>{`
         .about {
@@ -66,28 +34,40 @@ export function About() {
           padding-bottom: 0px;
         }
 
+        #about-title.section-title {
+          margin-bottom: 10px;
+        }
+
         .about__grid {
           display: grid;
-          gap: var(--space-12);
+          gap: var(--space-2);
         }
 
         @media (min-width: 768px) {
           .about__grid {
             grid-template-columns: 1fr 1fr;
           }
+
+          .about__narrative {
+            grid-column: 1 / -1;
+          }
         }
 
         .about__narrative p {
-          margin: 0;
+          margin: 0 0 var(--space-3);
           font-size: var(--text-lg);
           line-height: var(--leading-relaxed);
           color: var(--color-text);
         }
 
+        .about__narrative p:last-child {
+          margin-bottom: 0;
+        }
+
         .about__details {
           display: flex;
           flex-direction: column;
-          gap: var(--space-8);
+          gap: var(--space-2);
         }
 
         .about__block h3 {

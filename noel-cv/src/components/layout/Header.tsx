@@ -5,11 +5,11 @@ const navItems = [
   { id: "home", label: "Home", href: "#home" },
   { id: "about", label: "About", href: "#about" },
   // { id: "projects", label: "Projects", href: "#projects" },
-  { id: "skills", label: "Skills", href: "#skills" },
-  { id: "timeline", label: "Timeline", href: "#timeline" },
+  { id: "skills", label: "Skills", href: "#timeline" },
+  { id: "timeline", label: "Learning Journey", href: "#timeline-layout" },
   // { id: "experience", label: "Experience", href: "#experience" },
   // { id: "education", label: "Education", href: "#education" },
-  { id: "sancho-demo", label: "Sancho", href: "#sancho-demo" },
+  { id: "sancho-demo", label: "Sancho Model", href: "#sancho-demo" },
   { id: "contact", label: "Contact", href: "#contact" },
 ];
 
