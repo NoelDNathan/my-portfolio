@@ -314,9 +314,9 @@ export function Timeline() {
     const wordCount = countWords(textParts.join(" "));
 
     const baseMs = 900; // scroll + UI settle time
-    const msPerWord = 120; // ~250 WPM reading pace
+    const msPerWord = 30; // ~250 WPM reading pace
     const minMs = 1800;
-    const maxMs = 15000;
+    const maxMs = 10000;
 
     const estimated = baseMs + wordCount * msPerWord;
     return Math.max(minMs, Math.min(estimated, maxMs));

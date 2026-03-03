@@ -107,20 +107,15 @@ export function SkillGraph({ className }: SkillGraphProps) {
   const graphKey = currentNodeId ?? "root";
 
   return (
-    <section
-      className={`skillgraph ${className ?? ""}`}
-      aria-label="Hierarchical skills graph"
-    >
+    <section className={`skillgraph ${className ?? ""}`} aria-label="Hierarchical skills graph">
       <div className="skillgraph__header">
         <p className="skillgraph__eyebrow">Skill graph</p>
         <p className="skillgraph__title">{currentRootLabel}</p>
         <p className="skillgraph__hint">
-          Double-click a skill to zoom in. Double-click on the empty space to return to the previous level.
+          Double-click a skill to zoom in. Double-click on the empty space to return to the previous
+          level.
         </p>
-        <nav
-          className="skillgraph__breadcrumb"
-          aria-label="Skill graph level navigation"
-        >
+        <nav className="skillgraph__breadcrumb" aria-label="Skill graph level navigation">
           {breadcrumbItems.map((crumb, index) => {
             const isLast = index === breadcrumbItems.length - 1;
             return (
@@ -139,10 +134,7 @@ export function SkillGraph({ className }: SkillGraphProps) {
               >
                 {crumb.label}
                 {!isLast && (
-                  <span
-                    className="skillgraph__breadcrumb-separator"
-                    aria-hidden="true"
-                  >
+                  <span className="skillgraph__breadcrumb-separator" aria-hidden="true">
                     /
                   </span>
                 )}
@@ -152,40 +144,25 @@ export function SkillGraph({ className }: SkillGraphProps) {
         </nav>
       </div>
 
-      <div
-        className="skillgraph__canvas"
-        onDoubleClick={handleBackgroundDoubleClick}
-      >
+      <div className="skillgraph__canvas" onDoubleClick={handleBackgroundDoubleClick}>
         <AnimatePresence mode="wait">
           <motion.div
             key={graphKey}
             className="skillgraph__nodes"
-            initial={
-              shouldReduceMotion
-                ? { opacity: 0 }
-                : { opacity: 0, scale: 0.9, y: 8 }
-            }
+            initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.9, y: 8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={
-              shouldReduceMotion
-                ? { opacity: 0 }
-                : { opacity: 0, scale: 0.95, y: -8 }
-            }
-            transition={
-              shouldReduceMotion
-                ? { duration: 0 }
-                : { duration: 0.35, ease: "easeOut" }
-            }
+            exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.95, y: -8 }}
+            transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.35, ease: "easeOut" }}
           >
             {currentChildren.map((node) => {
               const levelClass =
                 node.level === "basic"
                   ? "skillgraph__node--basic"
                   : node.level === "medium"
-                  ? "skillgraph__node--medium"
-                  : node.level === "advanced"
-                  ? "skillgraph__node--advanced"
-                  : "skillgraph__node--undefined";
+                    ? "skillgraph__node--medium"
+                    : node.level === "advanced"
+                      ? "skillgraph__node--advanced"
+                      : "skillgraph__node--undefined";
 
               const isNavigable = canGoDeeper(node.id);
 
@@ -197,16 +174,8 @@ export function SkillGraph({ className }: SkillGraphProps) {
                     isNavigable ? "skillgraph__node--navigable" : ""
                   }`}
                   layout
-                  whileHover={
-                    shouldReduceMotion
-                      ? undefined
-                      : { scale: 1.03, translateY: -2 }
-                  }
-                  whileTap={
-                    shouldReduceMotion
-                      ? undefined
-                      : { scale: 0.97 }
-                  }
+                  whileHover={shouldReduceMotion ? undefined : { scale: 1.03, translateY: -2 }}
+                  whileTap={shouldReduceMotion ? undefined : { scale: 0.97 }}
                   onDoubleClick={(event) => {
                     event.stopPropagation();
                     if (isNavigable) {
@@ -214,12 +183,68 @@ export function SkillGraph({ className }: SkillGraphProps) {
                     }
                   }}
                 >
+                  {node.level === "basic" && (
+                    <svg
+                      className="skillgraph__node-shape"
+                      viewBox="0 0 100 100"
+                      aria-hidden="true"
+                      focusable="false"
+                    >
+                      <rect
+                        className="skillgraph__node-shape-basic"
+                        x="8"
+                        y="10"
+                        width="84"
+                        height="80"
+                        rx="10"
+                        ry="10"
+                      />
+                    </svg>
+                  )}
+                  {node.level === undefined && (
+                    <svg
+                      className="skillgraph__node-shape"
+                      viewBox="0 0 100 100"
+                      aria-hidden="true"
+                      focusable="false"
+                    >
+                      <rect
+                        className="skillgraph__node-shape-undefined"
+                        x="10"
+                        y="14"
+                        width="80"
+                        height="72"
+                        rx="14"
+                        ry="14"
+                      />
+                    </svg>
+                  )}
+                  {node.level === "medium" && (
+                    <svg
+                      className="skillgraph__node-shape"
+                      viewBox="0 0 100 100"
+                      aria-hidden="true"
+                      focusable="false"
+                    >
+                      <polygon
+                        className="skillgraph__node-shape-medium"
+                        points="50,3 93,25 93,75 50,97 7,75 7,25"
+                      />
+                    </svg>
+                  )}
+                  {node.level === "advanced" && (
+                    <svg
+                      className="skillgraph__node-shape"
+                      viewBox="0 0 100 100"
+                      aria-hidden="true"
+                      focusable="false"
+                    >
+                      <circle className="skillgraph__node-shape-advanced" cx="50" cy="50" r="44" />
+                    </svg>
+                  )}
                   <span className="skillgraph__node-label">{node.name}</span>
                   {isNavigable && (
-                    <span
-                      className="skillgraph__node-subtle-hint"
-                      aria-hidden="true"
-                    >
+                    <span className="skillgraph__node-subtle-hint" aria-hidden="true">
                       Subskills
                     </span>
                   )}
@@ -230,12 +255,32 @@ export function SkillGraph({ className }: SkillGraphProps) {
             {currentChildren.length === 0 && (
               <div className="skillgraph__empty">
                 <p className="skillgraph__empty-text">
-                  This level has no direct subskills. Double-click on the empty space to return to the previous level.
+                  This level has no direct subskills. Double-click on the empty space to return to
+                  the previous level.
                 </p>
               </div>
             )}
           </motion.div>
         </AnimatePresence>
+      </div>
+
+      <div className="skillgraph__legend" aria-hidden="true">
+        <div className="skillgraph__legend-item">
+          <span className="skillgraph__legend-swatch skillgraph__legend-swatch--basic" />
+          <span className="skillgraph__legend-label">Basic knowledge</span>
+        </div>
+        <div className="skillgraph__legend-item">
+          <span className="skillgraph__legend-swatch skillgraph__legend-swatch--medium" />
+          <span className="skillgraph__legend-label">Intermediate knowledge</span>
+        </div>
+        <div className="skillgraph__legend-item">
+          <span className="skillgraph__legend-swatch skillgraph__legend-swatch--advanced" />
+          <span className="skillgraph__legend-label">Advanced knowledge</span>
+        </div>
+        <div className="skillgraph__legend-item">
+          <span className="skillgraph__legend-swatch skillgraph__legend-swatch--undefined" />
+          <span className="skillgraph__legend-label">Level Not Defined</span>
+        </div>
       </div>
 
       <style>{`
@@ -341,11 +386,59 @@ export function SkillGraph({ className }: SkillGraphProps) {
           overflow: hidden;
         }
 
+        .skillgraph__legend {
+          margin-top: var(--space-2);
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.75rem 1.25rem;
+          align-items: center;
+          font-size: var(--text-xs);
+          color: var(--color-text-muted);
+        }
+
+        .skillgraph__legend-item {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.4rem;
+          opacity: 0.9;
+        }
+
+        .skillgraph__legend-swatch {
+          width: 12px;
+          height: 12px;
+          border-radius: 999px;
+        }
+
+        .skillgraph__legend-swatch--basic {
+          background: rgba(56, 189, 248, 0.9);
+        }
+
+        .skillgraph__legend-swatch--medium {
+          background: rgba(129, 140, 248, 0.9);
+        }
+
+        .skillgraph__legend-swatch--advanced {
+          background: rgba(94, 234, 212, 0.95);
+        }
+
+        .skillgraph__legend-swatch--undefined {
+          background: transparent;
+          border-radius: 2px;
+          border: 1px dashed rgba(148, 163, 184, 0.7);
+          width: 12px;
+          height: 12px;
+        }
+
+        .skillgraph__legend-label {
+          white-space: nowrap;
+        }
+
         .skillgraph__nodes {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
           gap: var(--space-2);
           align-items: stretch;
+          grid-auto-rows: 120px;
         }
 
         .skillgraph__node {
@@ -354,11 +447,11 @@ export function SkillGraph({ className }: SkillGraphProps) {
           flex-direction: column;
           justify-content: center;
           align-items: center;
-          padding: 0.75rem 0.85rem;
+          padding: 0.75rem 0.9rem;
           font-size: var(--text-xs);
           line-height: 1.3;
           color: rgba(248, 250, 252, 0.94);
-          border-radius: 0.9rem;
+          border-radius: 0.6rem;
           border: 1px solid rgba(148, 163, 184, 0.55);
           background: radial-gradient(
               circle at 20% 10%,
@@ -369,6 +462,7 @@ export function SkillGraph({ className }: SkillGraphProps) {
           box-shadow: 0 14px 38px rgba(15, 23, 42, 0.7);
           cursor: default;
           overflow: hidden;
+          height: 100%;
         }
 
         .skillgraph__node--navigable {
@@ -378,6 +472,16 @@ export function SkillGraph({ className }: SkillGraphProps) {
         .skillgraph__node-label {
           text-align: center;
           z-index: 1;
+          max-width: 80%;
+          font-size: calc(var(--text-xs) * 0.95);
+          line-height: 1.25;
+          white-space: normal;
+          word-break: break-word;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
         }
 
         .skillgraph__node-subtle-hint {
@@ -388,30 +492,59 @@ export function SkillGraph({ className }: SkillGraphProps) {
           color: rgba(148, 163, 184, 0.85);
         }
 
-        .skillgraph__node--basic {
-          border-radius: 0.4rem;
+        .skillgraph__node-label,
+        .skillgraph__node-subtle-hint {
+          position: relative;
+          z-index: 1;
         }
 
-        .skillgraph__node--medium {
-          clip-path: polygon(
-            30% 0%,
-            70% 0%,
-            100% 30%,
-            100% 70%,
-            70% 100%,
-            30% 100%,
-            0% 70%,
-            0% 30%
-          );
-        }
-
-        .skillgraph__node--advanced {
-          border-radius: 999px;
-        }
-
+        .skillgraph__node--basic,
+        .skillgraph__node--medium,
+        .skillgraph__node--advanced,
         .skillgraph__node--undefined {
-          border-style: dashed;
-          border-color: rgba(148, 163, 184, 0.5);
+          border: none;
+          background: transparent;
+          box-shadow: none;
+        }
+
+        .skillgraph__node-shape {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+        }
+
+        .skillgraph__node-shape-basic {
+          fill: rgba(15, 23, 42, 0.98);
+          stroke: rgba(56, 189, 248, 0.9);
+          stroke-width: 1.6;
+          vector-effect: non-scaling-stroke;
+          filter: drop-shadow(0 18px 50px rgba(15, 23, 42, 0.65));
+        }
+
+        .skillgraph__node-shape-medium {
+          fill: rgba(15, 23, 42, 0.98);
+          stroke: rgba(129, 140, 248, 0.9);
+          stroke-width: 1.6;
+          vector-effect: non-scaling-stroke;
+          filter: drop-shadow(0 18px 50px rgba(15, 23, 42, 0.75));
+        }
+
+        .skillgraph__node-shape-advanced {
+          fill: rgba(15, 23, 42, 0.98);
+          stroke: rgba(94, 234, 212, 0.95);
+          stroke-width: 1.8;
+          vector-effect: non-scaling-stroke;
+          // filter: drop-shadow(0 22px 60px rgba(34, 197, 235, 0.45));
+        }
+
+        .skillgraph__node-shape-undefined {
+          fill: rgba(15, 23, 42, 0.9);
+          stroke: rgba(148, 163, 184, 0.7);
+          stroke-width: 1.4;
+          stroke-dasharray: 5 4;
+          vector-effect: non-scaling-stroke;
+          filter: drop-shadow(0 16px 45px rgba(15, 23, 42, 0.6));
         }
 
         .skillgraph__empty {
@@ -441,4 +574,3 @@ export function SkillGraph({ className }: SkillGraphProps) {
     </section>
   );
 }
-
