@@ -37,7 +37,7 @@ export function Hero() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
           >
-            <CTAButton href="#projects">View My Work</CTAButton>
+            <CTAButton href="#timeline">View My Work</CTAButton>
             <CTAButton href="#contact" variant="secondary">
               Get in Touch
             </CTAButton>

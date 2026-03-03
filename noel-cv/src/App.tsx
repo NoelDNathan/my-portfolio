@@ -21,11 +21,11 @@ function App() {
       <main id="main-content">
         <Hero />
         <About />
-        <Projects />
-        <Skills />
+        {/* <Projects />
+        <Skills /> */}
         <Timeline />
-        <Experience />
-        <Education />
+        {/* <Experience />
+        <Education /> */}
         <SanchoDemo />
         <Contact />
       </main>

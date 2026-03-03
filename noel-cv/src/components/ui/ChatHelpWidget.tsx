@@ -18,7 +18,7 @@ const QUICK_QUESTIONS = [
 ];
 
 export function ChatHelpWidget() {
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
       id: 1,
@@ -32,6 +32,7 @@ export function ChatHelpWidget() {
   const [idCounter, setIdCounter] = useState(2);
   const [isLoading, setIsLoading] = useState(false);
   const hasUserMessages = messages.some((message) => message.role === "user");
+  const [hasAutoOpenedOnAbout, setHasAutoOpenedOnAbout] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -39,6 +40,52 @@ export function ChatHelpWidget() {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
     }
   }, [messages, isOpen]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    if (hasAutoOpenedOnAbout) {
+      return;
+    }
+
+    const aboutSection = document.querySelector<HTMLElement>("#about");
+    if (!aboutSection) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            setIsOpen(true);
+            setHasAutoOpenedOnAbout(true);
+
+            autoCloseTimeoutRef.current = window.setTimeout(() => {
+              setIsOpen(false);
+            }, 5000);
+
+            observer.disconnect();
+            break;
+          }
+        }
+      },
+      {
+        threshold: 0.3,
+      },
+    );
+
+    observer.observe(aboutSection);
+
+    return () => {
+      observer.disconnect();
+      if (autoCloseTimeoutRef.current !== null) {
+        clearTimeout(autoCloseTimeoutRef.current);
+        autoCloseTimeoutRef.current = null;
+      }
+    };
+  }, [hasAutoOpenedOnAbout]);
 
   const handleToggle = () => {
     if (autoCloseTimeoutRef.current !== null) {
