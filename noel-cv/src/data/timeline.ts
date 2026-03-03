@@ -19,7 +19,9 @@ export interface TimelineItem {
   id: string;
   title: string;
   period: string;
+  monthStart: number;
   yearStart: number;
+  monthEnd?: number;
   yearEnd?: number;
   summary: string;
   description: string;
@@ -34,8 +36,10 @@ export const timelineItems: TimelineItem[] = [
   {
     id: "josep-lluis-sert",
     title: "Scientific-Technological High School Diploma – Institut Josep Lluís Sert",
-    period: "2019 – 2021",
+    period: "September 2019 – June 2021",
+    monthStart: 9,
     yearStart: 2019,
+    monthEnd: 6,
     yearEnd: 2021,
     summary: "Completed a science and technology focused high school diploma with highest distinction.",
     description:
@@ -53,9 +57,11 @@ export const timelineItems: TimelineItem[] = [
   {
     id: "breaking-barriers-game",
     title: "Breaking Barriers – 3D Platformer Game",
-    period: "2020 – 2021",
+    period: "February 2020 – November 2020",
     yearStart: 2020,
-    yearEnd: 2021,
+    monthStart: 2,
+    monthEnd: 11,
+    yearEnd: 2020,
     summary:
       "Final high school project: designed and developed a 3D platformer game to learn game development by doing.",
     description:
@@ -79,7 +85,9 @@ export const timelineItems: TimelineItem[] = [
     title: "Data Science and AI Developer",
     period: "December 2023 – May 2024",
     yearStart: 2023,
+    monthStart: 12,
     yearEnd: 2024,
+    monthEnd: 5,
     summary:
       "Designed and implemented machine learning models and data visualization pipelines for geospatial and satellite data.",
     description:
@@ -97,9 +105,11 @@ export const timelineItems: TimelineItem[] = [
   {
     id: "university-project-dataclea",
     title: "DataClea – Generative AI for Data Cleaning and Analysis",
-    period: "2024",
+    period: "February 2024 – June 2024",
     yearStart: 2024,
     yearEnd: 2024,
+    monthStart: 2,
+    monthEnd: 6,
     summary:
       "Entrepreneurship project with Telefónica: designed a SaaS platform using generative AI to automate data cleaning and analysis.",
     description:
@@ -124,9 +134,11 @@ export const timelineItems: TimelineItem[] = [
   {
     id: "erasmus-tartu",
     title: "Erasmus+ Exchange – University of Tartu, Estonia",
-    period: "2024 – 2025",
+    period: "September 2024 – February 2025",
     yearStart: 2024,
+    monthStart: 9,
     yearEnd: 2025,
+    monthEnd: 2,
     summary:
       "Exchange year focused on AI and security: zero-knowledge proofs, explainable AutoML, applied cryptography, and information retrieval.",
     description:
@@ -152,9 +164,11 @@ export const timelineItems: TimelineItem[] = [
   {
     id: "decentralized-poker",
     title: "Decentralized Poker Platform",
-    period: "2024 – 2025",
+    period: "September 2024 – December 2025",
     yearStart: 2024,
+    monthStart: 9,
     yearEnd: 2025,
+    monthEnd: 12,
     summary:
       "Built a fully decentralized poker platform using smart contracts, zero-knowledge proofs, and a custom P2P network.",
     description:
@@ -185,9 +199,11 @@ export const timelineItems: TimelineItem[] = [
   {
     id: "ai-bachelor-upc",
     title: "Bachelor’s Degree in Artificial Intelligence – UPC",
-    period: "2021 – 2025",
+    period: "September 2021 – June 2025",
     yearStart: 2021,
+    monthStart: 9,
     yearEnd: 2025,
+    monthEnd: 6,
     summary:
       "Completed an AI bachelor’s degree at UPC with GPA 8.62 / 10, ranked 7th in the cohort.",
     description:
@@ -262,9 +278,11 @@ export const timelineItems: TimelineItem[] = [
   {
     id: "vision-guided-rl-robotics",
     title: "Vision-Guided Task Planning with Reinforcement Learning for Robotic Manipulation",
-    period: "2025",
+    period: "January 2025 – July 2025",
     yearStart: 2025,
+    monthStart: 1,
     yearEnd: 2025,
+    monthEnd: 7,
     summary:
       "Final degree project: unified system that combines reinforcement learning-based task planning with deep learning computer vision for robotic manipulation.",
     description:
@@ -289,9 +307,11 @@ export const timelineItems: TimelineItem[] = [
   {
     id: "rugby-coach-qualification",
     title: "Rugby Coach Qualification – L1 World Rugby",
-    period: "2025",
+    period: "August 2025",
     yearStart: 2025,
+    monthStart: 8,
     yearEnd: 2025,
+    monthEnd: 8,
     summary: "Completed World Rugby Level 1 coach qualification.",
     description:
       "I obtained the World Rugby Level 1 coaching qualification, which formalized my understanding of coaching principles, player safety, and training design. The course covered fundamental techniques, age-appropriate coaching, and best practices for creating a safe and engaging environment for players.",
@@ -308,8 +328,10 @@ export const timelineItems: TimelineItem[] = [
   {
     id: "universal-robots-courses",
     title: "Universal Robots – Core and Advanced Training",
-    period: "2025",
+    period: "November 2025",
     yearStart: 2025,
+    monthStart: 11,
+    monthEnd: 11,
     yearEnd: 2025,
     summary:
       "Hands-on industrial cobot training in programming, safety configuration, and deployment with Universal Robots.",
@@ -329,9 +351,11 @@ export const timelineItems: TimelineItem[] = [
   {
     id: "youth-rugby-coach",
     title: "Youth Rugby Team Coach (ages 10–12)",
-    period: "2023 and 2025",
+    period: "2023 – Present",
     yearStart: 2023,
-    yearEnd: 2025,
+    monthStart: 1,
+    yearEnd: 2026,
+    monthEnd: 3,
     summary:
       "Coached youth rugby teams, developing leadership, communication, and mentoring skills through real group management.",
     description:
@@ -351,7 +375,9 @@ export const timelineItems: TimelineItem[] = [
     title: "Rugby Player – CRUC Senior Team",
     period: "2021 – Present",
     yearStart: 2021,
+    monthStart: 9,
     yearEnd: 2026,
+    monthEnd: 3,
     summary:
       "Senior player at local club CRUC, competing in the highest Catalan league, with playing experience since 2010.",
     description:
@@ -371,6 +397,8 @@ export const timelineItems: TimelineItem[] = [
     title: "sancho-mini – Small-Scale LLM",
     period: "December 2025",
     yearStart: 2025,
+    monthStart: 12,
+    monthEnd: 12,
     yearEnd: 2025,
     summary:
       "Built and trained a compact LLM on the works of Miguel de Cervantes and deployed it to run directly in the browser.",
@@ -391,7 +419,9 @@ export const timelineItems: TimelineItem[] = [
     title: "Packengers – AI Copilot for Logistics",
     period: "August 2025 – Present",
     yearStart: 2025,
+    monthStart: 8,
     yearEnd: 2026,
+    monthEnd: 3,
     summary:
       "End-to-end AI project for Packengers: route optimization, payments workflow, and full-stack application deployed on AWS.",
     description:
@@ -423,7 +453,9 @@ export const timelineItems: TimelineItem[] = [
     title: "Healthi Bot – Voice AI Agent for Medical Appointments",
     period: "January 2026",
     yearStart: 2026,
+    monthStart: 1,
     yearEnd: 2026,
+    monthEnd: 1,
     summary:
       "Built a voice-based AI agent to automate medical appointment scheduling through natural dialog and external service integration.",
     description:
@@ -446,7 +478,9 @@ export const timelineItems: TimelineItem[] = [
     title: "Privacy and GDPR Legal Course",
     period: "February 2026",
     yearStart: 2026,
+    monthStart: 2,
     yearEnd: 2026,
+    monthEnd: 2,
     summary:
       "Completed a comprehensive GDPR course covering fundamentals, certification, and implementation of data protection programs.",
     description:

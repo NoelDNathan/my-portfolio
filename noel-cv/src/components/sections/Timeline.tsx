@@ -10,89 +10,58 @@ import { skillsGraph, type SkillNode as SkillGraphNode } from "../../data/skills
 import { SanchoDemo } from "./SanchoDemo";
 import { SkillGraph } from "../skills/SkillGraph";
 
+type TimelineNodeKind = "start" | "end";
+
+interface TimelineNode {
+  item: TimelineItem;
+  kind: TimelineNodeKind;
+}
+
+function hasItemRange(item: TimelineItem): boolean {
+  return (
+    item.yearEnd !== undefined &&
+    (item.yearEnd !== item.yearStart || item.monthEnd !== item.monthStart)
+  );
+}
+
+function nodeDateYear(node: TimelineNode): number {
+  return node.kind === "start" ? node.item.yearStart : node.item.yearEnd ?? node.item.yearStart;
+}
+
+function nodeDateMonth(node: TimelineNode): number {
+  return node.kind === "start" ? node.item.monthStart : node.item.monthEnd ?? node.item.monthStart;
+}
+
 interface TimelineRowProps {
   item: TimelineItem;
+  nodeKind: TimelineNodeKind;
   isActive: boolean;
   isPinned: boolean;
   onAutoActivate: () => void;
   onClick: () => void;
+  onDotRef?: (el: HTMLSpanElement | null) => void;
 }
 
 function TimelineRow({
   item,
+  nodeKind,
   isActive,
   isPinned,
   onAutoActivate,
   onClick,
+  onDotRef,
 }: TimelineRowProps) {
   const ref = useRef<HTMLDivElement | null>(null);
-  const trackRef = useRef<HTMLDivElement | null>(null);
   const isInView = useInView(ref, {
     margin: "-35% 0px -35% 0px",
   });
   const shouldReduceMotion = useReducedMotion();
-  const [rangeStyle, setRangeStyle] = useState<{ height: number; offset: number } | null>(null);
 
   useEffect(() => {
     if (isInView && !isPinned) {
       onAutoActivate();
     }
   }, [isInView, isPinned, onAutoActivate]);
-
-  const hasRange = item.yearEnd !== undefined && item.yearEnd !== item.yearStart;
-
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
-
-    let rafId = 0;
-    const scheduleRangeStyle = (next: { height: number; offset: number } | null) => {
-      rafId = window.requestAnimationFrame(() => {
-        setRangeStyle(next);
-      });
-    };
-
-    if (!hasRange || !isActive) {
-      scheduleRangeStyle(null);
-
-      return () => window.cancelAnimationFrame(rafId);
-    }
-
-    const trackEl = trackRef.current;
-    if (!trackEl) {
-      scheduleRangeStyle(null);
-      return () => window.cancelAnimationFrame(rafId);
-    }
-
-    const endYear = item.yearEnd ?? item.yearStart;
-    const endSeparator = document.querySelector<HTMLElement>(`[data-timeline-year="${endYear}"]`);
-
-    if (!endSeparator) {
-      scheduleRangeStyle(null);
-      return () => window.cancelAnimationFrame(rafId);
-    }
-
-    const trackRect = trackEl.getBoundingClientRect();
-    const endRect = endSeparator.getBoundingClientRect();
-
-    const startCenterY = trackRect.top + trackRect.height / 2;
-    const rawOffset = endRect.top - startCenterY;
-
-    if (!Number.isFinite(rawOffset)) {
-      scheduleRangeStyle(null);
-      return () => window.cancelAnimationFrame(rafId);
-    }
-
-    const minOffset = 24;
-    const maxOffset = 320;
-    const offset = Math.max(minOffset, Math.min(rawOffset, maxOffset));
-    const height = Math.max(12, offset - 10);
-
-    scheduleRangeStyle({ height, offset });
-
-    return () => window.cancelAnimationFrame(rafId);
-  }, [hasRange, isActive, item.yearEnd, item.yearStart]);
 
   const dotVariants = {
     inactive: { scale: 0.9, opacity: 0.6 },
@@ -102,6 +71,13 @@ function TimelineRow({
       boxShadow: "0 0 18px rgba(94, 234, 212, 0.9)",
     },
   };
+
+  const setRef = useCallback(
+    (el: HTMLSpanElement | null) => {
+      onDotRef?.(el);
+    },
+    [onDotRef],
+  );
 
   return (
     <div
@@ -113,9 +89,10 @@ function TimelineRow({
       onClick={onClick}
       aria-current={isActive ? "step" : undefined}
     >
-      <div className="timeline__row-track" ref={trackRef}>
+      <div className="timeline__row-track">
         <motion.span
-          className={`timeline__dot timeline__dot--${item.topic}`}
+          ref={setRef}
+          className={`timeline__dot timeline__dot--${item.topic} ${nodeKind === "end" ? "timeline__dot--secondary" : ""}`}
           variants={dotVariants}
           initial="inactive"
           animate={isActive ? "active" : "inactive"}
@@ -123,34 +100,6 @@ function TimelineRow({
             shouldReduceMotion ? { duration: 0 } : { type: "spring", stiffness: 260, damping: 24 }
           }
         />
-        {hasRange && isActive && (
-          <>
-            <motion.span
-              className={`timeline__duration timeline__duration--${item.topic}`}
-              style={rangeStyle ? { height: rangeStyle.height } : undefined}
-              initial={{ opacity: 0, scaleY: 0.3 }}
-              animate={{ opacity: 0.8, scaleY: 1 }}
-              exit={{ opacity: 0, scaleY: 0.3 }}
-              transition={
-                shouldReduceMotion
-                  ? { duration: 0 }
-                  : { type: "spring", stiffness: 260, damping: 24 }
-              }
-            />
-            <motion.span
-              className={`timeline__dot timeline__dot--secondary timeline__dot--${item.topic}`}
-              variants={dotVariants}
-              initial="inactive"
-              animate="active"
-              style={rangeStyle ? { y: rangeStyle.offset } : undefined}
-              transition={
-                shouldReduceMotion
-                  ? { duration: 0 }
-                  : { type: "spring", stiffness: 260, damping: 24 }
-              }
-            />
-          </>
-        )}
       </div>
       <div className="timeline__row-label">
         <p className="timeline__row-title">{item.title}</p>
@@ -201,17 +150,36 @@ export function Timeline() {
   const sortedItems = useMemo(
     () =>
       [...timelineItems].sort((a, b) => {
+        // 1. Year start
         if (a.yearStart !== b.yearStart) {
           return a.yearStart - b.yearStart;
         }
-        const aEnd = a.yearEnd ?? a.yearStart;
-        const bEnd = b.yearEnd ?? b.yearStart;
-        if (aEnd !== bEnd) {
-          return aEnd - bEnd;
+  
+        // 2. Month start
+        if (a.monthStart !== b.monthStart) {
+          return a.monthStart - b.monthStart;
         }
+  
+        // 3. Year end (fallback al yearStart)
+        const aYearEnd = a.yearEnd ?? a.yearStart;
+        const bYearEnd = b.yearEnd ?? b.yearStart;
+  
+        if (aYearEnd !== bYearEnd) {
+          return aYearEnd - bYearEnd;
+        }
+  
+        // 4. Month end (fallback al monthStart)
+        const aMonthEnd = a.monthEnd ?? a.monthStart;
+        const bMonthEnd = b.monthEnd ?? b.monthStart;
+  
+        if (aMonthEnd !== bMonthEnd) {
+          return aMonthEnd - b.monthEnd!;
+        }
+  
+        // 5. Id como último criterio
         return a.id.localeCompare(b.id);
       }),
-    [],
+    [timelineItems],
   );
 
   const allTopics = useMemo(
@@ -307,6 +275,81 @@ export function Timeline() {
 
     return items;
   }, [sortedItems, selectedTopics, selectedTopicsSet, selectedSkillFilter]);
+
+  const visibleNodes = useMemo(() => {
+    const nodes: TimelineNode[] = [];
+    for (const item of visibleItems) {
+      nodes.push({ item, kind: "start" });
+      if (hasItemRange(item) && item.id === activeId) {
+        nodes.push({ item, kind: "end" });
+      }
+    }
+    return nodes.sort((a, b) => {
+      const ya = nodeDateYear(a);
+      const yb = nodeDateYear(b);
+      if (ya !== yb) return ya - yb;
+      const ma = nodeDateMonth(a);
+      const mb = nodeDateMonth(b);
+      if (ma !== mb) return ma - mb;
+      if (a.kind !== b.kind) return a.kind === "start" ? -1 : 1;
+      return a.item.id.localeCompare(b.item.id);
+    });
+  }, [visibleItems, activeId]);
+
+  const rowsContainerRef = useRef<HTMLDivElement | null>(null);
+  const dotRefs = useRef<Map<string, HTMLSpanElement>>(new Map());
+  const [rangeBarStyle, setRangeBarStyle] = useState<{
+    top: number;
+    height: number;
+    left: number;
+    width: number;
+    topic: TimelineTopic;
+  } | null>(null);
+
+  useEffect(() => {
+    const active = activeId ? visibleItems.find((i) => i.id === activeId) : null;
+    if (!active || !hasItemRange(active)) {
+      const raf = requestAnimationFrame(() => setRangeBarStyle(null));
+      return () => cancelAnimationFrame(raf);
+    }
+    const startKey = `${active.id}-start`;
+    const endKey = `${active.id}-end`;
+    const startEl = dotRefs.current.get(startKey);
+    const endEl = dotRefs.current.get(endKey);
+    const rowsEl = rowsContainerRef.current;
+    if (!startEl || !endEl || !rowsEl) {
+      const raf = requestAnimationFrame(() => setRangeBarStyle(null));
+      return () => cancelAnimationFrame(raf);
+    }
+    const update = () => {
+      requestAnimationFrame(() => {
+        const startRect = startEl.getBoundingClientRect();
+        const endRect = endEl.getBoundingClientRect();
+        const rowsRect = rowsEl.getBoundingClientRect();
+        const top = startRect.top - rowsRect.top + startRect.height / 2;
+        const height = endRect.top - startRect.top + endRect.height / 2 - startRect.height / 2;
+        if (height <= 0) {
+          setRangeBarStyle(null);
+          return;
+        }
+        setRangeBarStyle({
+          top,
+          height,
+          left: startRect.left - rowsRect.left + startRect.width / 2 - 5,
+          width: 10,
+          topic: active.topic,
+        });
+      });
+    };
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(rowsEl);
+    window.addEventListener("scroll", update, true);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("scroll", update, true);
+    };
+  }, [activeId, visibleItems]);
 
   const ensureItemIsVisible = (id: string) => {
     const node = itemContainerRefs.current.get(id);
@@ -720,49 +763,70 @@ export function Timeline() {
               })}
             </div>
 
-            <div className="timeline__rows">
-              {visibleItems.map((item, index) => {
-                const previous = index > 0 ? visibleItems[index - 1] : null;
-                const isNewYear = !previous || previous.yearStart !== item.yearStart;
+            <div className="timeline__rows" ref={rowsContainerRef}>
+              {rangeBarStyle && (
+                <div
+                  className={`timeline__range-bar timeline__range-bar--${rangeBarStyle.topic}`}
+                  style={{
+                    position: "absolute",
+                    left: rangeBarStyle.left,
+                    top: rangeBarStyle.top,
+                    width: rangeBarStyle.width,
+                    height: rangeBarStyle.height,
+                    pointerEvents: "none",
+                  }}
+                  aria-hidden="true"
+                />
+              )}
+              {visibleNodes.map((node, index) => {
+                const previous = index > 0 ? visibleNodes[index - 1] : null;
+                const year = nodeDateYear(node);
+                const isNewYear = !previous || nodeDateYear(previous) !== year;
                 const shouldShowYearSeparator = index > 0 && isNewYear;
+                const rowKey = node.kind === "start" ? node.item.id : `${node.item.id}-end`;
 
                 return (
-                  <div key={item.id}>
+                  <div key={rowKey}>
                     {shouldShowYearSeparator && (
                       <div
                         className="timeline__year-separator"
                         role="separator"
-                        aria-label={String(item.yearStart)}
-                        data-timeline-year={item.yearStart}
+                        aria-label={String(year)}
+                        data-timeline-year={year}
                       >
-                        <span className="timeline__year-separator-label">{item.yearStart}</span>
+                        <span className="timeline__year-separator-label">{year}</span>
                       </div>
                     )}
                     <div
-                      ref={(node) => {
-                        if (node) {
-                          itemContainerRefs.current.set(item.id, node);
-                          return;
-                        }
-                        itemContainerRefs.current.delete(item.id);
-                      }}
-                      data-timeline-item={item.id}
+                      ref={
+                        node.kind === "start"
+                          ? (el) => {
+                              if (el) itemContainerRefs.current.set(node.item.id, el);
+                              else itemContainerRefs.current.delete(node.item.id);
+                            }
+                          : undefined
+                      }
+                      data-timeline-item={node.item.id}
                     >
                       <TimelineRow
-                        item={item}
-                        isActive={item.id === activeId}
-                        isPinned={pinnedId === item.id}
+                        item={node.item}
+                        nodeKind={node.kind}
+                        isActive={node.item.id === activeId}
+                        isPinned={pinnedId === node.item.id}
                         onAutoActivate={() => {
-                          if (!pinnedId) {
-                            setActiveId(item.id);
-                          }
+                          if (!pinnedId) setActiveId(node.item.id);
                         }}
                         onClick={() => {
                           stopTour();
                           const currentScrollY = typeof window !== "undefined" ? window.scrollY : 0;
-                          setPinnedId(item.id);
+                          setPinnedId(node.item.id);
                           setPinnedScrollY(currentScrollY);
-                          setActiveId(item.id);
+                          setActiveId(node.item.id);
+                        }}
+                        onDotRef={(el) => {
+                          const key = `${node.item.id}-${node.kind}`;
+                          if (el) dotRefs.current.set(key, el);
+                          else dotRefs.current.delete(key);
                         }}
                       />
                     </div>
@@ -1413,6 +1477,51 @@ export function Timeline() {
 
         .timeline__duration--sport {
           grid-column: 5;
+          background: linear-gradient(
+            to bottom,
+            rgba(251, 191, 36, 0.2),
+            rgba(251, 191, 36, 0.9)
+          );
+        }
+
+        .timeline__range-bar {
+          border-radius: 999px;
+          z-index: 0;
+        }
+
+        .timeline__range-bar--education {
+          background: linear-gradient(
+            to bottom,
+            rgba(56, 189, 248, 0.2),
+            rgba(56, 189, 248, 0.9)
+          );
+        }
+
+        .timeline__range-bar--professional {
+          background: linear-gradient(
+            to bottom,
+            rgba(74, 222, 128, 0.2),
+            rgba(74, 222, 128, 0.9)
+          );
+        }
+
+        .timeline__range-bar--project {
+          background: linear-gradient(
+            to bottom,
+            rgba(244, 114, 182, 0.2),
+            rgba(244, 114, 182, 0.9)
+          );
+        }
+
+        .timeline__range-bar--course {
+          background: linear-gradient(
+            to bottom,
+            rgba(129, 140, 248, 0.2),
+            rgba(129, 140, 248, 0.9)
+          );
+        }
+
+        .timeline__range-bar--sport {
           background: linear-gradient(
             to bottom,
             rgba(251, 191, 36, 0.2),
