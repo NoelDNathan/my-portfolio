@@ -58,10 +58,10 @@ function TimelineRow({
   const shouldReduceMotion = useReducedMotion();
 
   useEffect(() => {
-    if (isInView && !isPinned) {
+    if (nodeKind === "start" && isInView && !isPinned) {
       onAutoActivate();
     }
-  }, [isInView, isPinned, onAutoActivate]);
+  }, [nodeKind, isInView, isPinned, onAutoActivate]);
 
   const dotVariants = {
     inactive: { scale: 0.9, opacity: 0.6 },
@@ -90,16 +90,22 @@ function TimelineRow({
       aria-current={isActive ? "step" : undefined}
     >
       <div className="timeline__row-track">
+      {!(nodeKind === "end" && !isActive) && (
         <motion.span
           ref={setRef}
-          className={`timeline__dot timeline__dot--${item.topic} ${nodeKind === "end" ? "timeline__dot--secondary" : ""}`}
+          className={`timeline__dot timeline__dot--${item.topic} ${
+            nodeKind === "end" ? "timeline__dot--secondary" : ""
+          }`}
           variants={dotVariants}
           initial="inactive"
           animate={isActive ? "active" : "inactive"}
           transition={
-            shouldReduceMotion ? { duration: 0 } : { type: "spring", stiffness: 260, damping: 24 }
+            shouldReduceMotion
+              ? { duration: 0 }
+              : { type: "spring", stiffness: 260, damping: 24 }
           }
         />
+      )}
       </div>
       <div className="timeline__row-label">
         <p className="timeline__row-title">{item.title}</p>
@@ -280,7 +286,7 @@ export function Timeline() {
     const nodes: TimelineNode[] = [];
     for (const item of visibleItems) {
       nodes.push({ item, kind: "start" });
-      if (hasItemRange(item) && item.id === activeId) {
+      if (hasItemRange(item)) {
         nodes.push({ item, kind: "end" });
       }
     }
@@ -294,11 +300,12 @@ export function Timeline() {
       if (a.kind !== b.kind) return a.kind === "start" ? -1 : 1;
       return a.item.id.localeCompare(b.item.id);
     });
-  }, [visibleItems, activeId]);
+  }, [visibleItems]);
 
   const rowsContainerRef = useRef<HTMLDivElement | null>(null);
   const dotRefs = useRef<Map<string, HTMLSpanElement>>(new Map());
   const [rangeBarStyle, setRangeBarStyle] = useState<{
+    itemId: string;
     top: number;
     height: number;
     left: number;
@@ -333,6 +340,7 @@ export function Timeline() {
           return;
         }
         setRangeBarStyle({
+          itemId: active.id,
           top,
           height,
           left: startRect.left - rowsRect.left + startRect.width / 2 - 5,
@@ -764,7 +772,7 @@ export function Timeline() {
             </div>
 
             <div className="timeline__rows" ref={rowsContainerRef}>
-              {rangeBarStyle && (
+              {rangeBarStyle && rangeBarStyle.itemId === activeId && (
                 <div
                   className={`timeline__range-bar timeline__range-bar--${rangeBarStyle.topic}`}
                   style={{
