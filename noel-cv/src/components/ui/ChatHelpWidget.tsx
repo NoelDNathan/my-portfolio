@@ -1,10 +1,10 @@
-import { useState, useRef, useEffect, FormEvent } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import type { FormEvent } from "react";
 
 const CHAT_API_URL =
   import.meta.env.VITE_CHAT_API_URL ?? "http://localhost:8787/api/chat";
 
-console.log(CHAT_API_URL);
 interface ChatMessage {
   id: number;
   role: "user" | "assistant";
