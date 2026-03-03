@@ -323,15 +323,37 @@ export function SkillGraph({ className, selectedSkillId, onSkillSelect }: SkillG
 
       <div className="skillgraph__legend" aria-hidden="true">
         <div className="skillgraph__legend-item">
-          <span className="skillgraph__legend-swatch skillgraph__legend-swatch--basic" />
+          <svg className="skillgraph__legend-swatch" viewBox="0 0 16 16">
+            <rect
+              className="skillgraph__legend-swatch-basic-shape"
+              x="2"
+              y="2.5"
+              width="12"
+              height="11"
+              rx="2"
+              ry="2"
+            />
+          </svg>
           <span className="skillgraph__legend-label">Basic knowledge</span>
         </div>
         <div className="skillgraph__legend-item">
-          <span className="skillgraph__legend-swatch skillgraph__legend-swatch--medium" />
+          <svg className="skillgraph__legend-swatch" viewBox="0 0 16 16">
+            <polygon
+              className="skillgraph__legend-swatch-medium-shape"
+              points="8,1.5 13.5,4.5 13.5,11.5 8,14.5 2.5,11.5 2.5,4.5"
+            />
+          </svg>
           <span className="skillgraph__legend-label">Intermediate knowledge</span>
         </div>
         <div className="skillgraph__legend-item">
-          <span className="skillgraph__legend-swatch skillgraph__legend-swatch--advanced" />
+          <svg className="skillgraph__legend-swatch" viewBox="0 0 16 16">
+            <circle
+              className="skillgraph__legend-swatch-advanced-shape"
+              cx="8"
+              cy="8"
+              r="5.5"
+            />
+          </svg>
           <span className="skillgraph__legend-label">Advanced knowledge</span>
         </div>
         <div className="skillgraph__legend-item">
@@ -527,21 +549,27 @@ export function SkillGraph({ className, selectedSkillId, onSkillSelect }: SkillG
         }
 
         .skillgraph__legend-swatch {
-          width: 12px;
-          height: 12px;
-          border-radius: 999px;
+          width: 16px;
+          height: 16px;
+          display: block;
         }
 
-        .skillgraph__legend-swatch--basic {
-          background: rgba(56, 189, 248, 0.9);
+        .skillgraph__legend-swatch-basic-shape {
+          fill: transparent;
+          stroke: rgba(56, 189, 248, 0.9);
+          stroke-width: 1.5;
         }
 
-        .skillgraph__legend-swatch--medium {
-          background: rgba(129, 140, 248, 0.9);
+        .skillgraph__legend-swatch-medium-shape {
+          fill: transparent;
+          stroke: rgba(129, 140, 248, 0.9);
+          stroke-width: 1.5;
         }
 
-        .skillgraph__legend-swatch--advanced {
-          background: rgba(94, 234, 212, 0.95);
+        .skillgraph__legend-swatch-advanced-shape {
+          fill: transparent;
+          stroke: rgba(94, 234, 212, 0.95);
+          stroke-width: 1.5;
         }
 
         .skillgraph__legend-swatch--undefined {
