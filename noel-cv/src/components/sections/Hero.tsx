@@ -50,7 +50,7 @@ export function Hero() {
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.6, delay: 0.25 }}
         >
-          <img src="/perfil.jpg" alt="Portrait of Noel Nathan" className="hero__photo" />
+          <img src="perfil.jpg" alt="Portrait of Noel Nathan" className="hero__photo" />
         </motion.figure>
       </div>
 
