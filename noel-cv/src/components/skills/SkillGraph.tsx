@@ -72,9 +72,9 @@ export function SkillGraph({ className, selectedSkillId, onSkillSelect }: SkillG
   }, [childrenByParentId, currentNodeId, rootChildren]);
 
   const handleBackgroundDoubleClick = (event: MouseEvent<HTMLDivElement>) => {
-    if (event.target !== event.currentTarget) {
-      return;
-    }
+    // This is attached to the canvas wrapper; node buttons stopPropagation on double-click,
+    // so any double-click that reaches here should be treated as a "go up one level" intent.
+    event.stopPropagation();
 
     if (!currentNodeId) {
       return;
@@ -175,9 +175,7 @@ export function SkillGraph({ className, selectedSkillId, onSkillSelect }: SkillG
                   type="button"
                   className={`skillgraph__node ${levelClass} ${
                     isNavigable ? "skillgraph__node--navigable" : ""
-                  } ${
-                    isSelected ? "skillgraph__node--selected" : ""
-                  }`}
+                  } ${isSelected ? "skillgraph__node--selected" : ""}`}
                   layout
                   whileHover={shouldReduceMotion ? undefined : { scale: 1.03, translateY: -2 }}
                   whileTap={shouldReduceMotion ? undefined : { scale: 0.97 }}
