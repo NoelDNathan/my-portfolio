@@ -108,8 +108,12 @@ function TimelineRow({
       )}
       </div>
       <div className="timeline__row-label">
-        <p className="timeline__row-title">{item.title}</p>
-        <p className="timeline__row-period">{item.period}</p>
+      {!(nodeKind === "end") && (
+        <>
+          <p className="timeline__row-title">{item.title}</p>
+          <p className="timeline__row-period">{item.period}</p>
+        </>
+      )}
       </div>
     </div>
   );
