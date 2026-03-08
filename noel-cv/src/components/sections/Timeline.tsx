@@ -233,7 +233,7 @@ export function Timeline() {
   const itemContainerRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   const [tourStatus, setTourStatus] = useState<"idle" | "playing" | "paused">("idle");
-  const [tourIndex, setTourIndex] = useState<number>(0);
+  const [_, setTourIndex] = useState<number>(0);
   const tourTimerRef = useRef<number | null>(null);
   const tourStatusRef = useRef(tourStatus);
 
@@ -618,10 +618,7 @@ export function Timeline() {
   }, [pinnedId, pinnedScrollY]);
 
   const activeItem = visibleItems.find((item) => item.id === activeId) ?? visibleItems[0] ?? null;
-  const tourProgressLabel =
-    visibleItems.length > 0
-      ? `${Math.min(tourIndex + 1, visibleItems.length)}/${visibleItems.length}`
-      : "0/0";
+
 
   return (
     <section
