@@ -636,88 +636,18 @@ export function Timeline() {
           sport. Scroll to move through time: each milestone expands as it comes into focus.
         </motion.p>
 
-        <div className="timeline__tour" role="group" aria-label="Timeline guided tour controls and skills graph">
-          <div className="timeline__tour-main">
-            <div className="timeline__tour-copy">
-              <p className="timeline__tour-title">Guided tour</p>
-              <p className="timeline__tour-description">
-                Press play to automatically walk through the milestones. You can pause anytime and keep scrolling normally.
+        <div className="timeline__tour" role="group" aria-label="Interactive skills map and track filters">
+          <div className="timeline__tour-sidebar">
+            <header className="timeline__tour-header">
+              <h3 className="timeline__tour-title">Experience Navigator</h3>
+              <p className="timeline__tour-subtitle">
+                {selectedSkillFilter 
+                  ? "Explore milestones that forged this expertise." 
+                  : "Filter my journey by track or select a skill on the map."}
               </p>
-              {selectedSkillFilter && (
-                <p className="timeline__tour-skill-filter">
-                  Filtering by skill: <span>{selectedSkillFilter.name}</span>
-                  <button
-                    type="button"
-                    className="timeline__tour-skill-filter-clear"
-                    onClick={() => applySkillFilter(null)}
-                  >
-                    Clear
-                  </button>
-                </p>
-              )}
-            </div>
-
-            <div className="timeline__tour-controls">
-              <button
-                type="button"
-                className={`timeline__tour-button timeline__tour-button--primary ${
-                  tourStatus === "playing" ? "timeline__tour-button--is-active" : ""
-                }`}
-                onClick={() => {
-                  if (visibleItems.length === 0) {
-                    return;
-                  }
-
-                  if (tourStatus === "playing") {
-                    clearTourTimer();
-                    setTourStatus("paused");
-                    return;
-                  }
-
-                  const activeIndex = activeId ? visibleItems.findIndex((item) => item.id === activeId) : -1;
-                  setTourStatus("playing");
-                  tourStatusRef.current = "playing";
-                  runTourStep(activeIndex >= 0 ? activeIndex : 0);
-                }}
-                aria-pressed={tourStatus === "playing"}
-              >
-                <span className="timeline__tour-button-icon" aria-hidden="true">
-                  {tourStatus === "playing" ? (
-                    <svg viewBox="0 0 24 24" width="20" height="20" focusable="false" aria-hidden="true">
-                      <path fill="currentColor" d="M7 5h4v14H7zM13 5h4v14h-4z" />
-                    </svg>
-                  ) : (
-                    <svg viewBox="0 0 24 24" width="20" height="20" focusable="false" aria-hidden="true">
-                      <path fill="currentColor" d="M8 5v14l11-7z" />
-                    </svg>
-                  )}
-                </span>
-                <span className="timeline__tour-button-label">{tourStatus === "playing" ? "Pause" : "Play"}</span>
-                <span className="timeline__tour-progress" aria-hidden="true">
-                  {tourProgressLabel}
-                </span>
-              </button>
-
-              <button
-                type="button"
-                className="timeline__tour-button"
-                onClick={() => {
-                  stopTour();
-                  setTourIndex(0);
-                }}
-                disabled={tourStatus === "idle" && tourIndex === 0}
-              >
-                <span className="timeline__tour-button-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" width="18" height="18" focusable="false" aria-hidden="true">
-                    <path fill="currentColor" d="M7 7h10v10H7z" />
-                  </svg>
-                </span>
-                <span className="timeline__tour-button-label">Stop</span>
-              </button>
-            </div>
+            </header>
 
             <div className="timeline__filters" role="group" aria-label="Filter timeline by track">
-              <p className="timeline__filters-label">Filter by track</p>
               <div className="timeline__filter-chips">
                 {topicFilters.map((filter) => {
                   const isActive =
@@ -734,16 +664,42 @@ export function Timeline() {
                       onClick={() => applyTopicFilter(filter.id)}
                       aria-pressed={isActive}
                     >
+                      <span className="timeline__chip-dot" aria-hidden="true" />
                       {filter.label}
                     </button>
                   );
                 })}
               </div>
             </div>
+
+            <div className="timeline__tour-status">
+              <AnimatePresence mode="wait">
+                {selectedSkillFilter && (
+                  <motion.div 
+                    className="timeline__tour-badge"
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -10 }}
+                  >
+                    <span className="timeline__tour-badge-label">Active focus:</span>
+                    <span className="timeline__tour-badge-value">{selectedSkillFilter.name}</span>
+                    <button
+                      type="button"
+                      className="timeline__tour-badge-clear"
+                      onClick={() => applySkillFilter(null)}
+                      aria-label={`Clear filter for ${selectedSkillFilter.name}`}
+                    >
+                      ×
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
 
-          <div className="timeline__tour-graph" aria-label="Skills graph guided by experience" id="skills-graph">
+          <div className="timeline__tour-graph-container" id="skills-graph">
             <SkillGraph
+              className="skillgraph--embedded"
               selectedSkillId={selectedSkillFilter?.id ?? null}
               onSkillSelect={applySkillFilter}
             />
@@ -956,10 +912,10 @@ export function Timeline() {
 
         .timeline__tour {
           display: grid;
-          grid-template-columns: minmax(0, 3fr) minmax(0, 4fr);
-          gap: var(--space-4);
-          padding: clamp(1rem, 2vw, 1.35rem);
-          margin-bottom: var(--space-10);
+          grid-template-columns: minmax(0, 320px) minmax(0, 1fr);
+          gap: var(--space-6);
+          padding: var(--space-6);
+          margin-bottom: var(--space-12);
           border-radius: var(--radius-xl);
           border: 1px solid rgba(148, 163, 184, 0.35);
           background: radial-gradient(
@@ -969,226 +925,287 @@ export function Timeline() {
             ),
             radial-gradient(circle at 78% 8%, rgba(129, 140, 248, 0.16), transparent 42%),
             rgba(12, 12, 18, 0.92);
+          backdrop-filter: blur(12px);
           box-shadow:
             0 0 0 1px rgba(15, 23, 42, 0.75),
             0 26px 80px rgba(0, 0, 0, 0.55);
-          align-items: stretch;
+          overflow: hidden;
+          position: relative;
         }
 
-        .timeline__tour-main {
+        .timeline__tour::before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(
+            circle at 20% 20%,
+            rgba(94, 234, 212, 0.08),
+            transparent 50%
+          );
+          pointer-events: none;
+        }
+
+        .timeline__tour-sidebar {
           display: flex;
           flex-direction: column;
-          gap: var(--space-4);
+          gap: var(--space-6);
+          position: relative;
+          z-index: 1;
         }
 
-        .timeline__tour-graph {
-          min-height: 260px;
-        }
-
-        .timeline__tour-copy {
+        .timeline__tour-header {
           display: flex;
           flex-direction: column;
-          gap: 0.25rem;
-          max-width: 54rem;
-        }
-
-        .timeline__tour-skill-filter {
-          margin: 0.1rem 0 0;
-          font-size: var(--text-xs);
-          color: rgba(226, 232, 240, 0.8);
-          display: flex;
-          flex-wrap: wrap;
-          gap: 0.25rem;
-          align-items: center;
-        }
-
-        .timeline__tour-skill-filter span {
-          font-weight: 600;
-          color: rgba(94, 234, 212, 0.95);
-        }
-
-        .timeline__tour-skill-filter-clear {
-          appearance: none;
-          border: 0;
-          padding: 0.1rem 0.4rem;
-          border-radius: 999px;
-          font-size: 0.7rem;
-          letter-spacing: 0.06em;
-          text-transform: uppercase;
-          background: rgba(15, 23, 42, 0.8);
-          color: rgba(148, 163, 184, 0.9);
-          cursor: pointer;
+          gap: var(--space-2);
         }
 
         .timeline__tour-title {
           margin: 0;
-          font-size: var(--text-sm);
-          letter-spacing: 0.14em;
+          font-size: var(--text-base);
+          font-weight: 600;
+          letter-spacing: 0.05em;
           text-transform: uppercase;
-          color: rgba(248, 250, 252, 0.9);
+          color: var(--color-accent);
         }
 
-        .timeline__tour-description {
+        .timeline__tour-subtitle {
           margin: 0;
-          font-size: var(--text-sm);
+          font-size: var(--text-xs);
           line-height: var(--leading-relaxed);
-          color: var(--color-text-muted);
-        }
-
-        .timeline__tour-controls {
-          display: flex;
-          flex-wrap: wrap;
-          gap: var(--space-3);
-          align-items: center;
+          color: rgba(255, 255, 255, 0.6);
         }
 
         .timeline__filters {
           display: flex;
           flex-direction: column;
-          gap: var(--space-3);
-        }
-
-        .timeline__filters-label {
-          margin: 0;
-          font-size: var(--text-xs);
-          text-transform: uppercase;
-          letter-spacing: 0.14em;
-          color: rgba(226, 232, 240, 0.78);
+          gap: var(--space-4);
         }
 
         .timeline__filter-chips {
           display: flex;
-          flex-wrap: wrap;
+          flex-direction: column;
           gap: var(--space-2);
-          align-items: center;
         }
 
         .timeline__chip {
           appearance: none;
-          border: 1px solid rgba(148, 163, 184, 0.38);
-          background: rgba(2, 6, 23, 0.35);
-          color: rgba(226, 232, 240, 0.9);
-          border-radius: 999px;
-          padding: 0.45rem 0.75rem;
+          display: flex;
+          align-items: center;
+          gap: var(--space-3);
+          padding: var(--space-2) var(--space-4);
+          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid rgba(255, 255, 255, 0.05);
+          border-radius: var(--radius-md);
+          color: rgba(255, 255, 255, 0.7);
           font-size: var(--text-xs);
-          letter-spacing: 0.04em;
-          transition:
-            transform 160ms ease,
-            border-color 160ms ease,
-            background-color 160ms ease,
-            box-shadow 160ms ease;
-          user-select: none;
+          font-weight: 500;
+          text-align: left;
+          transition: all var(--transition-base);
+          cursor: pointer;
         }
 
         .timeline__chip:hover {
-          transform: translateY(-1px);
-          border-color: rgba(226, 232, 240, 0.6);
-          box-shadow: 0 10px 35px rgba(0, 0, 0, 0.35);
+          background: rgba(255, 255, 255, 0.06);
+          border-color: rgba(255, 255, 255, 0.1);
+          color: #fff;
+          transform: translateX(4px);
         }
 
-        .timeline__chip:focus-visible {
-          outline: 2px solid rgba(94, 234, 212, 0.9);
-          outline-offset: 3px;
+        .timeline__chip-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: currentColor;
+          opacity: 0.4;
+          transition: all var(--transition-base);
         }
 
         .timeline__chip--active {
-          background: rgba(15, 23, 42, 0.65);
-          border-color: rgba(94, 234, 212, 0.6);
-          box-shadow:
-            0 0 0 1px rgba(94, 234, 212, 0.25),
-            0 16px 60px rgba(94, 234, 212, 0.12);
+          background: rgba(0, 212, 170, 0.1);
+          border-color: rgba(0, 212, 170, 0.3);
+          color: var(--color-accent);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
 
-        .timeline__chip--education.timeline__chip--active {
-          border-color: rgba(56, 189, 248, 0.75);
-          box-shadow: 0 16px 60px rgba(56, 189, 248, 0.15);
+        .timeline__chip--active .timeline__chip-dot {
+          opacity: 1;
+          box-shadow: 0 0 8px currentColor;
+          transform: scale(1.2);
         }
 
-        .timeline__chip--professional.timeline__chip--active {
-          border-color: rgba(74, 222, 128, 0.75);
-          box-shadow: 0 16px 60px rgba(74, 222, 128, 0.15);
+        /* Topic-specific active states for intensity */
+        .timeline__chip--education.timeline__chip--active { color: #38bdf8; background: rgba(56, 189, 248, 0.1); border-color: rgba(56, 189, 248, 0.3); }
+        .timeline__chip--professional.timeline__chip--active { color: #4ade80; background: rgba(74, 222, 128, 0.1); border-color: rgba(74, 222, 128, 0.3); }
+        .timeline__chip--project.timeline__chip--active { color: #f472b6; background: rgba(244, 114, 182, 0.1); border-color: rgba(244, 114, 182, 0.3); }
+        .timeline__chip--course.timeline__chip--active { color: #818cf8; background: rgba(129, 140, 248, 0.1); border-color: rgba(129, 140, 248, 0.3); }
+        .timeline__chip--sport.timeline__chip--active { color: #fbbf24; background: rgba(251, 191, 36, 0.1); border-color: rgba(251, 191, 36, 0.3); }
+
+        .timeline__tour-status {
+          margin-top: auto;
+          min-height: 44px;
         }
 
-        .timeline__chip--project.timeline__chip--active {
-          border-color: rgba(244, 114, 182, 0.75);
-          box-shadow: 0 16px 60px rgba(244, 114, 182, 0.15);
-        }
-
-        .timeline__chip--course.timeline__chip--active {
-          border-color: rgba(129, 140, 248, 0.75);
-          box-shadow: 0 16px 60px rgba(129, 140, 248, 0.15);
-        }
-
-        .timeline__chip--sport.timeline__chip--active {
-          border-color: rgba(251, 191, 36, 0.8);
-          box-shadow: 0 16px 60px rgba(251, 191, 36, 0.16);
-        }
-
-        .timeline__tour-button {
+        .timeline__tour-badge {
           display: inline-flex;
           align-items: center;
-          gap: 0.55rem;
-          padding: 0.65rem 0.95rem;
-          border-radius: 999px;
-          border: 1px solid rgba(148, 163, 184, 0.45);
-          background: rgba(15, 23, 42, 0.75);
-          color: rgba(226, 232, 240, 0.92);
-          font-size: var(--text-sm);
-          letter-spacing: 0.01em;
-          transition:
-            transform 180ms ease,
-            border-color 180ms ease,
-            background-color 180ms ease,
-            box-shadow 180ms ease;
-          user-select: none;
+          gap: var(--space-2);
+          padding: var(--space-2) var(--space-3);
+          background: var(--color-accent);
+          color: var(--color-bg);
+          border-radius: var(--radius-md);
+          font-size: var(--text-xs);
+          font-weight: 600;
+          box-shadow: 0 8px 24px rgba(0, 212, 170, 0.25);
         }
 
-        .timeline__tour-button:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-          transform: none;
+        .timeline__tour-badge-label {
+          opacity: 0.8;
+          font-weight: 400;
         }
 
-        .timeline__tour-button:not(:disabled):hover {
-          transform: translateY(-1px);
-          border-color: rgba(94, 234, 212, 0.6);
-          box-shadow: 0 16px 45px rgba(0, 0, 0, 0.35);
+        .timeline__tour-badge-clear {
+          appearance: none;
+          border: 0;
+          background: rgba(0, 0, 0, 0.2);
+          color: inherit;
+          width: 18px;
+          height: 18px;
+          border-radius: 50%;
+          display: grid;
+          place-items: center;
+          cursor: pointer;
+          font-size: 14px;
+          margin-left: 4px;
+          transition: background 0.2s;
         }
 
-        .timeline__tour-button:focus-visible {
-          outline: 2px solid rgba(94, 234, 212, 0.9);
-          outline-offset: 3px;
+        .timeline__tour-badge-clear:hover {
+          background: rgba(0, 0, 0, 0.4);
         }
 
-        .timeline__tour-button--primary {
-          border-color: rgba(94, 234, 212, 0.7);
+        .timeline__tour-graph-container {
+          position: relative;
           background: radial-gradient(
-              circle at 20% 20%,
-              rgba(94, 234, 212, 0.25),
+              circle at 10% 0%,
+              rgba(56, 189, 248, 0.18),
               transparent 55%
             ),
-            rgba(15, 23, 42, 0.75);
-        }
-
-        .timeline__tour-button--is-active {
-          box-shadow:
-            0 0 0 1px rgba(94, 234, 212, 0.35),
-            0 18px 65px rgba(94, 234, 212, 0.18);
-        }
-
-        .timeline__tour-button-icon {
-          width: 34px;
-          height: 34px;
-          border-radius: 999px;
-          display: inline-grid;
-          place-items: center;
-          background: radial-gradient(
-              circle at 30% 30%,
-              rgba(248, 250, 252, 0.28),
-              rgba(94, 234, 212, 0.18)
+            radial-gradient(
+              circle at 95% 90%,
+              rgba(129, 140, 248, 0.22),
+              transparent 52%
             ),
-            rgba(15, 23, 42, 0.8);
-          border: 1px solid rgba(148, 163, 184, 0.38);
+            rgba(7, 12, 24, 0.98);
+          border-radius: var(--radius-lg);
+          border: 1px solid rgba(148, 163, 184, 0.4);
+          box-shadow:
+            0 0 0 1px rgba(15, 23, 42, 0.9),
+            0 18px 60px rgba(15, 23, 42, 0.85);
+          min-height: 400px;
+        }
+
+        /* SkillGraph overrides when embedded */
+        .skillgraph--embedded {
+          background: transparent !important;
+          border: none !important;
+          box-shadow: none !important;
+          padding: var(--space-4) !important;
+          height: 100%;
+        }
+
+        .skillgraph--embedded .skillgraph__header {
+          padding-bottom: var(--space-4);
+          border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .skillgraph--embedded .skillgraph__eyebrow,
+        .skillgraph--embedded .skillgraph__title {
+          display: none;
+        }
+
+        .skillgraph--embedded .skillgraph__hint {
+          display: flex;
+          align-items: center;
+          gap: var(--space-2);
+          padding: var(--space-2) var(--space-3);
+          background: rgba(94, 234, 212, 0.08);
+          border: 1px solid rgba(94, 234, 212, 0.2);
+          border-radius: var(--radius-md);
+          color: rgba(94, 234, 212, 0.9);
+          font-size: 11px;
+          line-height: 1.4;
+          margin-top: var(--space-1);
+        }
+
+        .skillgraph--embedded .skillgraph__hint::before {
+          content: "i";
+          display: grid;
+          place-items: center;
+          width: 16px;
+          height: 16px;
+          border-radius: 50%;
+          border: 1px solid currentColor;
+          font-family: serif;
+          font-style: italic;
+          font-weight: bold;
+          flex-shrink: 0;
+          font-size: 10px;
+        }
+
+        .skillgraph--embedded .skillgraph__canvas {
+          background: transparent !important;
+          border: none !important;
+          padding: var(--space-2) !important;
+          overflow: visible !important;
+        }
+
+        .skillgraph--embedded .skillgraph__node {
+          background: transparent !important;
+          backdrop-filter: none !important;
+          box-shadow: none !important;
+          border-color: transparent !important;
+        }
+
+        .skillgraph--embedded .skillgraph__node--selected {
+          background: rgba(15, 23, 42, 0.9) !important;
+          backdrop-filter: blur(12px) !important;
+          border-radius: var(--radius-md);
+          box-shadow: 
+            0 0 0 2px rgba(94, 234, 212, 0.6),
+            0 0 35px rgba(94, 234, 212, 0.45) !important;
+        }
+
+        .skillgraph--embedded .skillgraph__node:hover:not(.skillgraph__node--selected) {
+          background: rgba(255, 255, 255, 0.05) !important;
+          border-radius: var(--radius-md);
+        }
+
+        .skillgraph--embedded .skillgraph__legend {
+          margin-top: var(--space-6);
+          padding: var(--space-3) var(--space-4);
+          background: rgba(15, 23, 42, 0.4);
+          border: 1px solid rgba(148, 163, 184, 0.15);
+          border-radius: var(--radius-lg);
+          backdrop-filter: blur(8px);
+          display: flex;
+          justify-content: center;
+          gap: var(--space-4) var(--space-6);
+        }
+
+        .skillgraph--embedded .skillgraph__legend-item {
+          opacity: 1;
+          color: rgba(255, 255, 255, 0.8);
+        }
+
+        @media (max-width: 960px) {
+          .timeline__tour {
+            grid-template-columns: 1fr;
+          }
+          
+          .timeline__filter-chips {
+            flex-direction: row;
+            flex-wrap: wrap;
+          }
         }
 
         .timeline__tour-button-label {

@@ -23,7 +23,7 @@ export function ChatHelpWidget() {
     {
       id: 1,
       role: "assistant",
-      content: "Hi! How can I help you explore this portfolio?",
+      content: "Hi! How can I help you explore this portfolio? Note: my answers may contain inaccuracies, especially in technical details.",
     },
   ]);
   const [inputValue, setInputValue] = useState("");
