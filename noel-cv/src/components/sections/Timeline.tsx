@@ -306,6 +306,22 @@ export function Timeline() {
     });
   }, [visibleItems]);
 
+  const activeSkillIds = useMemo(() => {
+    if (selectedTopics.length === 0) return null;
+    
+    const skillIds = new Set<string>();
+    for (const skill of skillsGraph) {
+      if (!skill.relatedItems) continue;
+      const belongsToVisibleItem = skill.relatedItems.some(itemId => 
+        visibleItems.some(item => item.id === itemId)
+      );
+      if (belongsToVisibleItem) {
+        skillIds.add(skill.id);
+      }
+    }
+    return skillIds.size > 0 ? skillIds : null;
+  }, [selectedTopics, visibleItems]);
+
   const rowsContainerRef = useRef<HTMLDivElement | null>(null);
   const dotRefs = useRef<Map<string, HTMLSpanElement>>(new Map());
   const [rangeBarStyle, setRangeBarStyle] = useState<{
@@ -702,6 +718,7 @@ export function Timeline() {
               className="skillgraph--embedded"
               selectedSkillId={selectedSkillFilter?.id ?? null}
               onSkillSelect={applySkillFilter}
+              activeSkillIds={activeSkillIds}
             />
           </div>
         </div>

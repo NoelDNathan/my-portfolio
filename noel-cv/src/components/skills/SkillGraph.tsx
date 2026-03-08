@@ -8,9 +8,15 @@ interface SkillGraphProps {
   className?: string;
   selectedSkillId?: string | null;
   onSkillSelect?: (skill: SkillGraphNode | null) => void;
+  activeSkillIds?: Set<string> | null;
 }
 
-export function SkillGraph({ className, selectedSkillId, onSkillSelect }: SkillGraphProps) {
+export function SkillGraph({ 
+  className, 
+  selectedSkillId, 
+  onSkillSelect,
+  activeSkillIds 
+}: SkillGraphProps) {
   const [currentNodeId, setCurrentNodeId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -71,6 +77,27 @@ export function SkillGraph({ className, selectedSkillId, onSkillSelect }: SkillG
     }
     return childrenByParentId.get(currentNodeId) ?? [];
   }, [childrenByParentId, currentNodeId, rootChildren]);
+
+  const effectiveActiveIds = useMemo(() => {
+    if (!activeSkillIds) return null;
+    
+    const highlighted = new Set<string>();
+    
+    // For each active skill, add it and all its ancestors to the highlighted set
+    activeSkillIds.forEach(id => {
+      let cursor: SkillGraphNode | null = nodesById.get(id) ?? null;
+      while (cursor) {
+        if (highlighted.has(cursor.id)) break;
+        highlighted.add(cursor.id);
+        cursor = cursor.parentId ? (nodesById.get(cursor.parentId) ?? null) : null;
+      }
+    });
+
+    // Also include any children of the current path if they have active descendants
+    // This part is actually already covered by the ancestor logic above for all nodes in the graph
+    
+    return highlighted;
+  }, [activeSkillIds, nodesById]);
 
   const handleBackgroundDoubleClick = (event: MouseEvent<HTMLDivElement>) => {
     // This is attached to the canvas wrapper; node buttons stopPropagation on double-click,
@@ -209,6 +236,7 @@ export function SkillGraph({ className, selectedSkillId, onSkillSelect }: SkillG
 
               const isNavigable = canGoDeeper(node.id);
               const isSelected = selectedSkillId === node.id;
+              const isDimmed = effectiveActiveIds !== null && !effectiveActiveIds.has(node.id);
 
               return (
                 <motion.button
@@ -216,7 +244,9 @@ export function SkillGraph({ className, selectedSkillId, onSkillSelect }: SkillG
                   type="button"
                   className={`skillgraph__node ${levelClass} ${
                     isNavigable ? "skillgraph__node--navigable" : ""
-                  } ${isSelected ? "skillgraph__node--selected" : ""}`}
+                  } ${isSelected ? "skillgraph__node--selected" : ""} ${
+                    isDimmed ? "skillgraph__node--dimmed" : ""
+                  }`}
                   layout
                   whileHover={shouldReduceMotion ? undefined : { scale: 1.03, translateY: -2 }}
                   whileTap={shouldReduceMotion ? undefined : { scale: 0.97 }}
@@ -614,6 +644,17 @@ export function SkillGraph({ className, selectedSkillId, onSkillSelect }: SkillG
           cursor: default;
           overflow: hidden;
           height: 100%;
+          transition: opacity var(--transition-base), transform var(--transition-base), box-shadow var(--transition-base);
+        }
+
+        .skillgraph__node--dimmed {
+          opacity: 0.15;
+          pointer-events: none;
+        }
+
+        .skillgraph__node--dimmed:hover {
+          opacity: 0.3;
+          pointer-events: auto;
         }
 
         .skillgraph__node--navigable {
