@@ -1,3 +1,4 @@
+
 export const profile = {
   name: "Noel Nathan Planell Bosch",
   headline: "AI Engineer | Computer Vision · Machine Learning",
